@@ -20,6 +20,7 @@ from diffusion.script_util import (
 from diffusion.image_datasets import load_data
 from torchvision import utils
 import math
+import time
 
 
 # added
@@ -40,7 +41,8 @@ def load_reference(data_dir, batch_size, image_size, class_cond=False):
 def main():
     args = create_argparser().parse_args()
 
-    th.manual_seed(0)
+    # th.manual_seed(0)         # original
+    th.manual_seed(args.seed)   # Bernardo
 
     dist_util.setup_dist()
     logger.configure(dir=args.save_dir)
@@ -61,9 +63,10 @@ def main():
 
     assert math.log(args.down_N, 2).is_integer()
 
-    logger.log("creating samples...")
+    logger.log(f"\ncreating {args.num_samples} samples, seed={args.seed}...")
     count = 0
     while count * args.batch_size < args.num_samples:
+        start_time = time.time()
         sample = diffusion.p_sample_loop(
             model,
             (args.batch_size, 3, args.image_size, args.image_size),
@@ -71,11 +74,14 @@ def main():
             model_kwargs={},
             range_t=args.range_t
         )
+        end_time = time.time()
+        total_elapsed_time = end_time - start_time
+        logger.log('    Total time: %.2fs    Time per sample: %.2fs' % (total_elapsed_time, total_elapsed_time/args.num_samples))
 
         for i in range(args.batch_size):
             out_path = os.path.join(logger.get_dir(),
                                     f"{str(count * args.batch_size + i).zfill(5)}.png")
-            print('Saving image:', out_path)
+            logger.log(f'    Saving image: {out_path}')
             utils.save_image(
                 sample[i].unsqueeze(0),
                 out_path,
@@ -85,10 +91,11 @@ def main():
             )
 
         count += 1
-        logger.log(f"created {count * args.batch_size} samples")
+        logger.log(f"    created {count * args.batch_size} samples")
+        logger.log(f"-------------")
 
     dist.barrier()
-    logger.log("sampling complete")
+    logger.log("\nsampling complete")
 
 
 def create_argparser():
@@ -103,6 +110,7 @@ def create_argparser():
         model_path="",
         save_dir="",
         save_latents=False,
+        seed=0,   # Bernardo
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

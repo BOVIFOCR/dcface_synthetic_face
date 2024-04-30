@@ -8,6 +8,7 @@ from tqdm import tqdm
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
+import time
 
 
 class ListDatasetWithIndex(Dataset):
@@ -194,8 +195,14 @@ def dataset_generate(pl_module, style_dataset, id_dataset, num_image_per_subject
     datagen_dataloader = DataLoader(datagen_dataset, num_workers=num_workers, batch_size=1, shuffle=False, collate_fn=collate_fn)
 
     for batch in tqdm(datagen_dataloader, total=len(datagen_dataloader), desc='Generating Dataset: '):
+        start_time = time.time()
         id_images, style_images, labels, names = batch
         plotting_images = sample_batch(id_images, style_images, pl_module, seed=labels[0].item())
+        
+        end_time = time.time()
+        total_elapsed_time = end_time - start_time
+        print('    Total time: %.2fs    Time per sample: %.2fs' % (total_elapsed_time, total_elapsed_time/len(batch)))
+        
         for image, label, name in zip(plotting_images, labels, names):
             save_name = f"{label.item()}/{name.item()}.jpg"
             if writer is not None:
@@ -203,8 +210,10 @@ def dataset_generate(pl_module, style_dataset, id_dataset, num_image_per_subject
                 writer.mark_done('image', save_name)
             else:
                 save_path = os.path.join(save_root, save_name)
+                print('    Saving output image:', save_path)
                 os.makedirs(os.path.dirname(save_path), exist_ok=True)
                 cv2.imwrite(save_path, image)
+        print('----------')
 
 
 
