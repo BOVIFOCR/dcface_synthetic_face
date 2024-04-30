@@ -75,12 +75,13 @@ def main():
         for i in range(args.batch_size):
             out_path = os.path.join(logger.get_dir(),
                                     f"{str(count * args.batch_size + i).zfill(5)}.png")
+            print('Saving image:', out_path)
             utils.save_image(
                 sample[i].unsqueeze(0),
                 out_path,
                 nrow=1,
                 normalize=True,
-                range=(-1, 1),
+                value_range=(-1, 1),
             )
 
         count += 1
