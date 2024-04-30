@@ -47,7 +47,8 @@ def download_ir_pretrained_statedict(backbone_name, dataset_name, loss_fn):
         try:
             subprocess.check_call([os.path.expanduser('~/.local/bin/gdown'), '--id', _id])
         except:
-            subprocess.check_call([os.path.expanduser('~/anaconda3/envs/pj3/bin/gdown'), '--id', _id])
+            # subprocess.check_call([os.path.expanduser('~/anaconda3/envs/pj3/bin/gdown'), '--id', _id])
+            subprocess.check_call([os.path.expanduser('gdown'), '--id', _id])
         if not os.path.isdir(os.path.dirname(checkpoint_path)):
             subprocess.check_call(['mkdir', '-p', os.path.dirname(checkpoint_path)])
         subprocess.check_call(['mv', _name, checkpoint_path])
