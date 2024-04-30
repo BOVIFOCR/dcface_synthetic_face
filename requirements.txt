@@ -31,3 +31,7 @@ ftfy
 regex
 pytorch-fid==0.2.0
 einops
+opencv-python
+huggingface-hub
+mxnet
+numpy==1.23.1
