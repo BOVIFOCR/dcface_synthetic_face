@@ -36,7 +36,7 @@ The sample aligned images are provided in the repository.
 - Run
 ```
 cd dcface/src
-python synthesis.py --id_images_root ../sample_images/id_images/sample_57.png --style_images_root ../sample_images/style_images/woman
+python synthesis.py --id_images_root sample_images/id_images/sample_57.png --style_images_root sample_images/style_images/woman
 ```
 
 ### Optional 
