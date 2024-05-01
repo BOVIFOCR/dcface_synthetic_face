@@ -23,11 +23,12 @@ conda env config vars set LD_LIBRARY_PATH="$CUDA_HOME/lib64"; conda deactivate; 
 conda env config vars set PATH="$CUDA_HOME:$CUDA_HOME/bin:$LD_LIBRARY_PATH:$PATH"; conda deactivate; conda activate $CONDA_ENV
 ```
 
-### 3. Clone this repository
+### 3. Clone this repository and install requirements
 ```
 cd ~
 git clone https://github.com/BOVIFOCR/dcface_synthetic_face.git
 cd dcface_synthetic_face
+./install.sh    # If it fails, try to run "pip3 install -r requirements.txt" and download model weights from the link below
 ```
 
 </br></br></br>
