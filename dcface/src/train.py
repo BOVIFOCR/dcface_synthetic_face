@@ -10,6 +10,10 @@ root = pyrootutils.setup_root(
     dotenv=True,
 )
 dotenv.load_dotenv(dotenv_path=root.parent.parent / '.env', override=True)
+
+os.environ["DATA_ROOT"] = os.path.join(root, 'data')
+os.environ["HYDRA_FULL_ERROR"] = '1'
+
 assert os.getenv('DATA_ROOT')
 assert os.path.isdir(os.getenv('DATA_ROOT'))
 import time
