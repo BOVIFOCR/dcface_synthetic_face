@@ -1,3 +1,36 @@
+# BOVIFOCR Instructions
+
+### 1. Main requirements
+- Python==3.9
+- CUDA==11.2
+- numpy==1.23.1
+- mxnet==1.9.1
+- torch==2.3.0
+- torchvision==0.18.0
+- pytorch-lightning==1.7.1
+- opencv-python==4.9.0.80
+
+</br>
+
+### 2. Create environment
+```
+CONDA_ENV=dcface_synthetic_face
+conda create -y --name $CONDA_ENV python=3.9
+conda activate $CONDA_ENV
+
+conda env config vars set CUDA_HOME="/usr/local/cuda-11.2"; conda deactivate; conda activate $CONDA_ENV
+conda env config vars set LD_LIBRARY_PATH="$CUDA_HOME/lib64"; conda deactivate; conda activate $CONDA_ENV
+conda env config vars set PATH="$CUDA_HOME:$CUDA_HOME/bin:$LD_LIBRARY_PATH:$PATH"; conda deactivate; conda activate $CONDA_ENV
+```
+
+### 3. Clone this repository
+```
+cd ~
+git clone https://github.com/BOVIFOCR/dcface_synthetic_face.git
+cd dcface_synthetic_face
+```
+
+</br></br></br>
 
 
 # DCFace: Synthetic Face Generation with Dual Condition Diffusion Model
