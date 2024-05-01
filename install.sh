@@ -1,5 +1,5 @@
 
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 mkdir -p dcface/pretrained_models
 cd dcface/pretrained_models
 wget -O adaface_ir50_casia.ckpt https://drive.google.com/uc\?export\=download\&confirm\=t\&id\=1AmaMTvfHq25obqb2i7MsbftJdAuvbN19
