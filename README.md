@@ -80,8 +80,8 @@ The result will be saved at `<Project_root>/dcface/generated_images/`
 
 #### Run
 ```
-cd dcface/src/
-bash train.sh
+cd dcface
+bash src/scripts/train.sh
 ```
 
 
