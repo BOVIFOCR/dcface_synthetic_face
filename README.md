@@ -10,8 +10,6 @@
 - pytorch-lightning==1.7.1
 - opencv-python==4.9.0.80
 
-</br>
-
 ### 2. Create environment
 ```
 CONDA_ENV=dcface_synthetic_face
@@ -30,6 +28,31 @@ git clone https://github.com/BOVIFOCR/dcface_synthetic_face.git
 cd dcface_synthetic_face
 ./install.sh    # If it fails, try to run "pip3 install -r requirements.txt" and download model weights from the link below
 ```
+
+#### - Creating Synthetic ID Images (New Subjects)
+```
+cd dcface/stage1/unconditional_generation
+python unconditional_sampling.py \
+      --attention_resolutions 16 \
+      --class_cond False \
+      --diffusion_steps 1000 \
+      --num_samples 16 \
+      --batch_size 8 \
+      --image_size 256 \
+      --learn_sigma True \
+      --noise_schedule linear \
+      --num_channels 128 \
+      --num_head_channels 64 \
+      --num_res_blocks 1 \
+      --resblock_updown True \
+      --use_fp16 False \
+      --use_scale_shift_norm True \
+      --timestep_respacing 100 \
+      --down_N 32 \
+      --range_t 20 \
+      --save_dir unconditional_samples
+```
+*Images will be saved into the folder `dcface/stage1/unconditional_generation/unconditional_samples`
 
 </br></br></br>
 
