@@ -1,6 +1,6 @@
 # BOVIFOCR Instructions
 
-### 1. Main requirements
+## 1. Main requirements
 - Python==3.9
 - CUDA==11.2
 - numpy==1.23.1
@@ -10,7 +10,7 @@
 - pytorch-lightning==1.7.1
 - opencv-python==4.9.0.80
 
-### 2. Create environment
+## 2. Create environment
 ```
 CONDA_ENV=dcface_synthetic_face
 conda create -y --name $CONDA_ENV python=3.9
@@ -21,13 +21,14 @@ conda env config vars set LD_LIBRARY_PATH="$CUDA_HOME/lib64"; conda deactivate; 
 conda env config vars set PATH="$CUDA_HOME:$CUDA_HOME/bin:$LD_LIBRARY_PATH:$PATH"; conda deactivate; conda activate $CONDA_ENV
 ```
 
-### 3. Clone this repository and install requirements
+## 3. Clone this repository and install requirements
 ```
 cd ~
 git clone https://github.com/BOVIFOCR/dcface_synthetic_face.git
 cd dcface_synthetic_face
 ./install.sh    # If it fails, try to run "pip3 install -r requirements.txt" and download model weights from the link below
 ```
+
 
 </br>
 
@@ -55,6 +56,16 @@ python unconditional_sampling.py \
       --save_dir unconditional_samples
 ```
 *Images will be saved into the folder `dcface/stage1/unconditional_generation/unconditional_samples`
+
+
+</br>
+
+#### - Stylize images
+
+```
+cd dcface/src
+python synthesis.py --id_images_root sample_images/id_images/sample_57.png --style_images_root sample_images/style_images/woman
+```
 
 </br></br></br>
 
