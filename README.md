@@ -33,6 +33,8 @@ cd dcface_synthetic_face
 
 </br>
 
+## Using Pre-Trained Models
+
 #### - Creating Synthetic ID Images (New Subjects)
 ```
 cd dcface/stage1/unconditional_generation
