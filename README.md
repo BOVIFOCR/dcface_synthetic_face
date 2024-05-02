@@ -26,8 +26,9 @@ conda env config vars set PATH="$CUDA_HOME:$CUDA_HOME/bin:$LD_LIBRARY_PATH:$PATH
 cd ~
 git clone https://github.com/BOVIFOCR/dcface_synthetic_face.git
 cd dcface_synthetic_face
-./install.sh    # If it fails, try to run "pip3 install -r requirements.txt" and download model weights from the link below
+./install.sh
 ```
+* If it fails, try to run `pip3 install -r requirements.txt` and download model weights from the [link](https://drive.google.com/drive/folders/1ePqFN2eDo0l31aQOkW_U5Mcrlcl83j19?usp=share_link)
 
 
 </br>
@@ -66,6 +67,7 @@ python unconditional_sampling.py \
 cd dcface/src
 python synthesis.py --id_images_root sample_images/id_images/sample_57.png --style_images_root sample_images/style_images/woman
 ```
+* The image `sample_57.png` will be stylized from images `sample_5.png, sample_14.png, sample_20.png, sample_45.png, sample_63.png, sample_69.png` and saved into the folder `dcface/generated_images/dcface_3x3/id:sample_57/sty:list_woman`
 
 </br></br></br>
 
