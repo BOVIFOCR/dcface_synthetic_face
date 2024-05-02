@@ -71,6 +71,24 @@ python synthesis.py --id_images_root sample_images/id_images/sample_57.png --sty
 ```
 * The image `sample_57.png` will be stylized from images `sample_5.png, sample_14.png, sample_20.png, sample_45.png, sample_63.png, sample_69.png` and saved into the folder `dcface/generated_images/dcface_3x3/id:sample_57/sty:list_woman`
 
+</br>
+
+## Train Mixer Model
+
+#### Dataset preparation
+- Download casia webface dataset from [insightface](https://github.com/deepinsight/insightface/tree/master/recognition/_datasets_)
+    - Place it under `$DATA_ROOT` (ex: `/data/`). 
+    - ex: `/data/faces_webface_112x112`
+
+#### Download model weights
+- Download all pretrained weights from the [link](https://drive.google.com/drive/folders/1ePqFN2eDo0l31aQOkW_U5Mcrlcl83j19?usp=share_link)
+- Place the `pretrained_models` directory under `dcface` (same level as `src`)
+
+#### Run
+```
+cd dcface
+bash src/scripts/train.sh
+```
 </br></br></br>
 
 
