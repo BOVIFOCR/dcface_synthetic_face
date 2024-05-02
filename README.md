@@ -55,7 +55,7 @@ python unconditional_sampling.py \
       --range_t 20 \
       --save_dir unconditional_samples
 ```
-*Images will be saved into the folder `dcface/stage1/unconditional_generation/unconditional_samples`
+* 16 new images will be saved into the folder `dcface/stage1/unconditional_generation/unconditional_samples`
 
 
 </br>
