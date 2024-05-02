@@ -29,6 +29,8 @@ cd dcface_synthetic_face
 ./install.sh    # If it fails, try to run "pip3 install -r requirements.txt" and download model weights from the link below
 ```
 
+</br>
+
 #### - Creating Synthetic ID Images (New Subjects)
 ```
 cd dcface/stage1/unconditional_generation
