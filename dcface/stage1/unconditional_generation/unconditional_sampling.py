@@ -76,7 +76,7 @@ def main():
         )
         end_time = time.time()
         total_elapsed_time = end_time - start_time
-        logger.log('    Total time: %.2fs    Time per sample: %.2fs' % (total_elapsed_time, total_elapsed_time/args.num_samples))
+        logger.log('    Total time: %.2fs    Time per sample: %.2fs' % (total_elapsed_time, total_elapsed_time/args.batch_size))
 
         for i in range(args.batch_size):
             out_path = os.path.join(logger.get_dir(),
@@ -91,7 +91,7 @@ def main():
             )
 
         count += 1
-        logger.log(f"    created {count * args.batch_size} samples")
+        logger.log(f"    created {count * args.batch_size}/{args.num_samples} samples")
         logger.log(f"-------------")
 
     dist.barrier()

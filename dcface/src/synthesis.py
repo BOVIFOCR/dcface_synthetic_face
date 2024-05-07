@@ -38,7 +38,8 @@ def natural_sort(l):
 def main():
 
     parser = ArgumentParser()
-    parser.add_argument('--ckpt_path', type=str, default='pretrained_models/dcface_3x3.ckpt')
+    # parser.add_argument('--ckpt_path', type=str, default='pretrained_models/dcface_3x3.ckpt')   # original
+    parser.add_argument('--ckpt_path', type=str, default='pretrained_models/dcface_5x5.ckpt')     # Bernardo
     parser.add_argument('--num_image_per_subject', type=int, default=1)
     parser.add_argument('--num_subject', type=int, default=1)
     parser.add_argument('--seed', type=int, default=123)
