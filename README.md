@@ -69,7 +69,7 @@ python unconditional_sampling.py \
 cd dcface/src
 python synthesis.py --id_images_root sample_images/id_images/sample_57.png --style_images_root sample_images/style_images/woman
 ```
-* The image `sample_57.png` will be stylized from images `sample_5.png, sample_14.png, sample_20.png, sample_45.png, sample_63.png, sample_69.png` and saved into the folder `dcface/generated_images/dcface_3x3/id:sample_57/sty:list_woman`
+* The image `sample_57.png` will be stylized from images `sample_5.png, sample_14.png, sample_20.png, sample_45.png, sample_63.png, sample_69.png` and saved into the folder `dcface/generated_images/dcface_5x5/id:sample_57/sty:list_woman`
 
 </br>
 
