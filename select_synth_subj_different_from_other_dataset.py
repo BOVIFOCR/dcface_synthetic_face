@@ -69,13 +69,14 @@ def filter_subjs_by_cosine_similarities(src_embedds, tgt_embedds, thresh=0.3):
         src_embedd = src_embedds[src_subj]
         subj_sims = {}
         for idx_tgt_subj, tgt_subj in enumerate(tgt_embedds.keys()):
-            tgt_embedd = tgt_embedds[tgt_subj]
-            cos_sim_src_tgt = cosine_similarity(src_embedd, tgt_embedd)
-            subj_sims[tgt_subj] = cos_sim_src_tgt
-            print(f'    src_subj: {idx_src_subj}/{len(src_embedds)}  -  tgt_subj: {idx_tgt_subj}/{len(tgt_embedds)}  -  cos_sim: {cos_sim_src_tgt}  -  subjs_to_remove: {len(subjs_src_to_remove)}                                 ', end='\r')
-            if cos_sim_src_tgt >= thresh:
-                subjs_src_to_remove.append(src_subj)
-                # break
+            if src_subj != tgt_subj:
+                tgt_embedd = tgt_embedds[tgt_subj]
+                cos_sim_src_tgt = cosine_similarity(src_embedd, tgt_embedd)
+                subj_sims[tgt_subj] = cos_sim_src_tgt
+                print(f'    src_subj: {idx_src_subj}/{len(src_embedds)}  -  tgt_subj: {idx_tgt_subj}/{len(tgt_embedds)}  -  cos_sim: {cos_sim_src_tgt}  -  subjs_to_remove: {len(subjs_src_to_remove)}                                 ', end='\r')
+                if cos_sim_src_tgt >= thresh:
+                    subjs_src_to_remove.append(src_subj)
+                    # break
         all_cos_src_similarities[src_subj] = subj_sims
         print('')
         end_time = time.time()
