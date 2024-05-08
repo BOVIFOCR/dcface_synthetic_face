@@ -12,7 +12,7 @@ def parse_args():
     parser.add_argument('--src_embedds_ext', type=str, default='embedd_2D_arcface.npy')
     parser.add_argument('--tgt_embedds_path', type=str, default='/datasets2/1st_frcsyn_wacv2024/datasets/3D_reconstruction_MICA/real/1_CASIA-WebFace/imgs_crops_112x112/embeddings2D')
     parser.add_argument('--tgt_embedds_ext', type=str, default='_mean_embedding_r100_arcface.npy')
-    parser.add_argument('--cos_sim_threshold', type=float, default=0.3)
+    # parser.add_argument('--cos_sim_threshold', type=float, default=0.3)
     parser.add_argument('--output_path', type=str, default='/datasets2/bjgbiesseck/face_recognition/synthetic/stylegan2-ada_SFHQ/images_selected_different_from_CASIA-WebFace')
     args = parser.parse_args()
     return args
@@ -60,8 +60,7 @@ def cosine_similarity(A, B):
     return cos_sim
 
 
-def filter_subjs_by_cosine_similarities(src_embedds, tgt_embedds, thresh=0.3):
-    subjs_src_to_remove = []
+def compute_all_cosine_similarities(src_embedds, tgt_embedds):
     all_cos_src_similarities = {}
     total_time = 0.0
     for idx_src_subj, src_subj in enumerate(src_embedds.keys()):
@@ -73,10 +72,8 @@ def filter_subjs_by_cosine_similarities(src_embedds, tgt_embedds, thresh=0.3):
                 tgt_embedd = tgt_embedds[tgt_subj]
                 cos_sim_src_tgt = cosine_similarity(src_embedd, tgt_embedd)
                 subj_sims[tgt_subj] = cos_sim_src_tgt
-                print(f'    src_subj: {idx_src_subj}/{len(src_embedds)}  -  tgt_subj: {idx_tgt_subj}/{len(tgt_embedds)}  -  cos_sim: {cos_sim_src_tgt}  -  subjs_to_remove: {len(subjs_src_to_remove)}                                 ', end='\r')
-                if cos_sim_src_tgt >= thresh:
-                    subjs_src_to_remove.append(src_subj)
-                    # break
+                print(f'    src_subj: {idx_src_subj}/{len(src_embedds)}  -  tgt_subj: {idx_tgt_subj}/{len(tgt_embedds)}  -  cos_sim: {cos_sim_src_tgt}                          ', end='\r')
+                
         all_cos_src_similarities[src_subj] = subj_sims
         print('')
         end_time = time.time()
@@ -85,8 +82,7 @@ def filter_subjs_by_cosine_similarities(src_embedds, tgt_embedds, thresh=0.3):
         est_time = spent_time * (len(src_embedds.keys())-idx_src_subj)
         print('        Elapsed time: %.2fs  -  Total Elapsed time: %.2fs (%.2fh)  -  Time to end: %.2fs (%.2fh)' % (spent_time, total_time, total_time/3600, est_time, est_time/3600))
     print('')
-    subjs_src_to_remove = sorted(list(set(subjs_src_to_remove)))   # remove duplicate values
-    return subjs_src_to_remove, all_cos_src_similarities
+    return all_cos_src_similarities
 
 
 
@@ -102,9 +98,9 @@ def main(args):
     imgs_output_path = os.path.join(output_path, 'samples')
     os.makedirs(imgs_output_path, exist_ok=True)
 
-    file_subjs_to_remove_and_cos_sims = f'subjs_to_remove_and_cos_sims_thresh={args.cos_sim_threshold}.pkl'
-    path_file_subjs_to_remove_and_cos_sims = os.path.join(output_path, file_subjs_to_remove_and_cos_sims)
-    if not os.path.isfile(path_file_subjs_to_remove_and_cos_sims):
+    file_cos_sims = 'all_cosine_similarities.pkl'
+    path_file_cos_sims = os.path.join(output_path, file_cos_sims)
+    if not os.path.isfile(path_file_cos_sims):
         print(f'Loading files \'{args.src_embedds_ext}\' in path: \'{args.src_embedds_path}\'')
         all_src_embedds_path = find_all_files(args.src_embedds_path, [args.src_embedds_ext])
         # print('    all_src_embedds_path[0]:', all_src_embedds_path[0])
@@ -127,20 +123,17 @@ def main(args):
 
         #############################
 
-        print(f'\nFiltering subjects by cosine similarity')
-        subjs_src_to_remove, all_cos_src_similarities = filter_subjs_by_cosine_similarities(all_src_embedds, all_tgt_embedds, thresh=args.cos_sim_threshold)
-        subjs_to_remove_and_cos_sims = {'subjs_to_remove': subjs_src_to_remove,
-                                        'cos_similarities': all_cos_src_similarities}
+        print(f'\nComputing cosine similarities')
+        all_cos_src_similarities = compute_all_cosine_similarities(all_src_embedds, all_tgt_embedds)
         # print('all_cos_src_similarities:', all_cos_src_similarities)
-        print(f'Saving subjects to remove and cosine similarities: \'{path_file_subjs_to_remove_and_cos_sims}\'')
-        save_object_pickle(subjs_to_remove_and_cos_sims, path_file_subjs_to_remove_and_cos_sims)
+        print(f'Saving cosine similarities: \'{path_file_cos_sims}\'')
+        save_object_pickle(all_cos_src_similarities, path_file_cos_sims)
         print('    Done')
-    
+
     else:
-        print(f'Loading subjects to remove and cosine similarities: \'{path_file_subjs_to_remove_and_cos_sims}\'')
-        subjs_to_remove_and_cos_sims = load_object_pickle(path_file_subjs_to_remove_and_cos_sims)
-        subjs_src_to_remove = subjs_to_remove_and_cos_sims['subjs_to_remove']
-        all_cos_src_similarities = subjs_to_remove_and_cos_sims['cos_similarities']
+        print(f'Loading cosine similarities: \'{path_file_cos_sims}\'')
+        all_cos_src_similarities = load_object_pickle(path_file_cos_sims)
+        # print('all_cos_src_similarities:', all_cos_src_similarities)
         print('    Done')
 
 
