@@ -85,6 +85,33 @@ def compute_all_cosine_similarities(src_embedds, tgt_embedds):
     return all_cos_src_similarities
 
 
+def compute_save_all_cosine_similarities(src_embedds, tgt_embedds, output_path):
+    total_time = 0.0
+    for idx_src_subj, src_subj in enumerate(src_embedds.keys()):
+        start_time = time.time()
+        src_embedd = src_embedds[src_subj]
+        subj_sims = {}
+        for idx_tgt_subj, tgt_subj in enumerate(tgt_embedds.keys()):
+            if src_subj != tgt_subj:
+                tgt_embedd = tgt_embedds[tgt_subj]
+                cos_sim_src_tgt = cosine_similarity(src_embedd, tgt_embedd)
+                subj_sims[tgt_subj] = cos_sim_src_tgt
+                print(f'    src_subj: {idx_src_subj}/{len(src_embedds)}  -  tgt_subj: {idx_tgt_subj}/{len(tgt_embedds)}  -  cos_sim: {cos_sim_src_tgt}                          ', end='\r')
+        print('')
+
+        path_subj = os.path.join(output_path, src_subj)
+        os.makedirs(path_subj, exist_ok=True)
+        path_file_cos_sims = os.path.join(path_subj, 'cosine_similarities.pkl')
+        print(f'        Saving cosine similarities: {path_file_cos_sims}')
+        save_object_pickle(subj_sims, path_file_cos_sims)
+        
+        end_time = time.time()
+        spent_time = end_time - start_time
+        total_time += spent_time
+        est_time = spent_time * (len(src_embedds.keys())-idx_src_subj)
+        print('        Elapsed time: %.2fs  -  Total Elapsed time: %.2fs (%.2fh)  -  Time to end: %.2fs (%.2fh)' % (spent_time, total_time, total_time/3600, est_time, est_time/3600))
+
+
 
 def main(args):
     args.src_embedds_path = args.src_embedds_path.rstrip('/')
@@ -98,44 +125,39 @@ def main(args):
     imgs_output_path = os.path.join(output_path, 'samples')
     os.makedirs(imgs_output_path, exist_ok=True)
 
-    file_cos_sims = 'all_cosine_similarities.pkl'
-    path_file_cos_sims = os.path.join(output_path, file_cos_sims)
-    if not os.path.isfile(path_file_cos_sims):
-        print(f'Loading files \'{args.src_embedds_ext}\' in path: \'{args.src_embedds_path}\'')
-        all_src_embedds_path = find_all_files(args.src_embedds_path, [args.src_embedds_ext])
-        # print('    all_src_embedds_path[0]:', all_src_embedds_path[0])
-        print(f'    Loaded {len(all_src_embedds_path)} files')
+    cossim_output_path = os.path.join(output_path, 'cosine_similarities')
+    os.makedirs(cossim_output_path, exist_ok=True)
 
-        print(f'Loading files \'{args.tgt_embedds_ext}\' in path: \'{args.tgt_embedds_path}\'')
-        all_tgt_embedds_path = find_all_files(args.tgt_embedds_path, [args.tgt_embedds_ext])
-        # print('    all_tgt_embedds_path[0]:', all_tgt_embedds_path[0])
-        print(f'    Loaded {len(all_tgt_embedds_path)} files')
+    #############################
 
-        #############################
-        
-        print(f'\nLoading source embeddings')
-        all_src_embedds = load_embedds(all_src_embedds_path, normalize=True)
-        print(f'    Loaded {len(all_src_embedds)} source embeddings')
+    print(f'Loading files \'{args.src_embedds_ext}\' in path: \'{args.src_embedds_path}\'')
+    all_src_embedds_path = find_all_files(args.src_embedds_path, [args.src_embedds_ext])
+    # print('    all_src_embedds_path[0]:', all_src_embedds_path[0])
+    print(f'    Loaded {len(all_src_embedds_path)} files')
 
-        print(f'\nLoading target embeddings')
-        all_tgt_embedds = load_embedds(all_tgt_embedds_path, normalize=True)
-        print(f'    Loaded {len(all_tgt_embedds)} target embeddings')
+    print(f'Loading files \'{args.tgt_embedds_ext}\' in path: \'{args.tgt_embedds_path}\'')
+    all_tgt_embedds_path = find_all_files(args.tgt_embedds_path, [args.tgt_embedds_ext])
+    # print('    all_tgt_embedds_path[0]:', all_tgt_embedds_path[0])
+    print(f'    Loaded {len(all_tgt_embedds_path)} files')
 
-        #############################
+    #############################
+    
+    print(f'\nLoading source embeddings')
+    all_src_embedds = load_embedds(all_src_embedds_path, normalize=True)
+    print(f'    Loaded {len(all_src_embedds)} source embeddings')
 
-        print(f'\nComputing cosine similarities')
-        all_cos_src_similarities = compute_all_cosine_similarities(all_src_embedds, all_tgt_embedds)
-        # print('all_cos_src_similarities:', all_cos_src_similarities)
-        print(f'Saving cosine similarities: \'{path_file_cos_sims}\'')
-        save_object_pickle(all_cos_src_similarities, path_file_cos_sims)
-        print('    Done')
+    print(f'\nLoading target embeddings')
+    all_tgt_embedds = load_embedds(all_tgt_embedds_path, normalize=True)
+    print(f'    Loaded {len(all_tgt_embedds)} target embeddings')
 
-    else:
-        print(f'Loading cosine similarities: \'{path_file_cos_sims}\'')
-        all_cos_src_similarities = load_object_pickle(path_file_cos_sims)
-        # print('all_cos_src_similarities:', all_cos_src_similarities)
-        print('    Done')
+    #############################
 
+    print(f'\nComputing cosine similarities')
+    compute_save_all_cosine_similarities(all_src_embedds, all_tgt_embedds, cossim_output_path)
+
+    print('\nFinished\n')
+
+   
 
 
 if __name__ == "__main__":
