@@ -31,11 +31,15 @@ def load_object_pickle(file_path):
 
 def find_all_files(folder_path, extensions=['.jpg', '.png']):
     image_paths = []
+    num_found_files = 0
     for root, _, files in os.walk(folder_path):
         for ext in extensions:
             pattern = os.path.join(root, '*' + ext)
             matching_files = glob.glob(pattern)
             image_paths.extend(matching_files)
+            num_found_files += 1
+            print(f'    num_found_files: {num_found_files}', end='\r')
+    print('')
     return sorted(image_paths)
 
 
