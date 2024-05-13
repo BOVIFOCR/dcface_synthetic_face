@@ -152,5 +152,6 @@ experiments/
 dcface/generated_images/
 dcface/sample_images
 dcface/data/
+trained_models/
 unconditional_samples
 debug.sh
