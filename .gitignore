@@ -155,3 +155,8 @@ dcface/data/
 trained_models/
 unconditional_samples
 debug.sh
+
+
+# Bernardo
+.hydra/
+experiments_WITH_3DMM_CONSISTENCY_CONSTRAINTS/
