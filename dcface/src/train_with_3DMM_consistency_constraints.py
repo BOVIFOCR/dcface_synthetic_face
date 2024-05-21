@@ -10,8 +10,11 @@ root = pyrootutils.setup_root(
     dotenv=True,
 )
 dotenv.load_dotenv(dotenv_path=root.parent.parent / '.env', override=True)
+# dotenv.load_dotenv(dotenv_path=root.parent.parent / '.env_with_3DMM_consistency_constraints', override=True)
 
-os.environ["DATA_ROOT"] = os.path.join(root, 'data')
+# os.environ["DATA_ROOT"] = os.path.join(root, 'data')                                     # original
+os.environ["DATA_ROOT"] = '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace'   # Bernardo
+
 os.environ["HYDRA_FULL_ERROR"] = '1'
 
 assert os.getenv('DATA_ROOT')
@@ -36,7 +39,7 @@ from src.utils import option_parsing
 from src.utils.hydra_utils import instantiate_callbacks, instantiate_loggers, log_hyperparameters
 
 
-def train(cfg: DictConfig) -> Tuple[dict, dict]:
+def train_with_3DMM_consistency_constraints(cfg: DictConfig) -> Tuple[dict, dict]:
     """Trains the model. Can additionally evaluate on a testset, using best weights obtained during
     training.
 
@@ -122,7 +125,7 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
 
 # @hydra.main(version_base="1.2", config_path=root / "src/configs", config_name="train.yaml")
 @hydra.main(version_base="1.2", config_path=root / "src/configs", config_name="train_with_3DMM_consistency_constraints.yaml")
-def main(cfg: DictConfig) -> Optional[float]:
+def main_with_3DMM_consistency_constraints(cfg: DictConfig) -> Optional[float]:
 
     # fix hydra path
     print(f"tmp directory : {cfg.paths.output_dir}")
@@ -149,9 +152,9 @@ def main(cfg: DictConfig) -> Optional[float]:
     cfg = option_parsing.post_process(cfg)
 
     # train the model
-    metric_dict, _ = train(cfg)
+    metric_dict, _ = train_with_3DMM_consistency_constraints(cfg)
     print(metric_dict)
 
 
 if __name__ == "__main__":
-    main()
+    main_with_3DMM_consistency_constraints()

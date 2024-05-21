@@ -7,7 +7,8 @@ defaults:
   # - trainer: default.yaml                                     # original
   - trainer: default_with_3DMM_consistency_constraints.yaml     # Bernardo
   - callbacks: default.yaml
-  - datamodule: casia_webface.yaml
+  # - datamodule: casia_webface.yaml                            # original
+  - datamodule: casia_webface_imgs_crops.yaml                   # Bernardo
   - hydra: default.yaml
   - paths: default.yaml
   - logger: wandb.yaml

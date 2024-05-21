@@ -2,13 +2,17 @@
 # CUDA_VISIBLE_DEVICES=0,1 python src/train.py \
 # python src/train.py \
 
-BATCH_GPU=16     # duo
-# BATCH_GPU=256
+# BATCH_GPU=16     # duo (10GB)
+BATCH_GPU=32       # duo (17GB)
+# BATCH_GPU=256    # daugman (40GB)
+
+# DATA_MODULE=casia_webface              # original
+DATA_MODULE=casia_webface_imgs_crops     # Bernardo
 
 python src/train_with_3DMM_consistency_constraints.py \
         prefix=e:10_spatial_dim:5_bias:0.0_casia_ir50 \
         datamodule.total_gpu_batch_size=$BATCH_GPU \
-        datamodule=casia_webface \
+        datamodule=$DATA_MODULE \
         lightning.max_epochs=10 \
         recognition=casia_ir50 \
         recognition_eval=default \
