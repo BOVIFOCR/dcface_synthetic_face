@@ -20,6 +20,7 @@ precision: ${lightning.precision}
 datamodule: ${datamodule}
 recognition: ${recognition}
 recognition_eval: ${recognition_eval}
+reconstruction: ${reconstruction}
 losses: ${losses}
 external_mapping: ${external_mapping}
 label_mapping: ${label_mapping}

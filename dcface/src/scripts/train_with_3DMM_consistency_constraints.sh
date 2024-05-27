@@ -2,12 +2,16 @@
 # CUDA_VISIBLE_DEVICES=0,1 python src/train.py \
 # python src/train.py \
 
-# BATCH_GPU=16     # duo (10GB)
-BATCH_GPU=32       # duo (17GB)
-# BATCH_GPU=256    # daugman (40GB)
+BATCH_GPU=8        # duo     ( 9.6GB)
+# BATCH_GPU=16     # duo     (10.0GB)
+# BATCH_GPU=32     # duo     (17.0GB)
+# BATCH_GPU=256    # daugman (40.0GB)
 
-# DATA_MODULE=casia_webface              # original
-DATA_MODULE=casia_webface_imgs_crops     # Bernardo
+DATA_MODULE=casia_webface                 # original
+# DATA_MODULE=casia_webface_imgs_crops    # Bernardo
+
+ThreeDMM_LOSS_LAMBDA=0.05                 # same as 'identity_consistency_loss_lambda'
+
 
 python src/train_with_3DMM_consistency_constraints.py \
         prefix=e:10_spatial_dim:5_bias:0.0_casia_ir50 \
@@ -16,6 +20,7 @@ python src/train_with_3DMM_consistency_constraints.py \
         lightning.max_epochs=10 \
         recognition=casia_ir50 \
         recognition_eval=default \
+        reconstruction=mica \
         optimizer.optimizer_model.lr=1e-04 \
         datamodule.img_size=112 \
         model=default \
@@ -33,6 +38,7 @@ python src/train_with_3DMM_consistency_constraints.py \
         losses.identity_consistency_loss_center_source=id_image \
         losses.identity_consistency_loss_time_cut=0.0 \
         losses.identity_consistency_loss_weight_start_bias=0.0 \
+        losses.threeDMM_consistency_loss_lambda=$ThreeDMM_LOSS_LAMBDA \
         losses.spatial_consistency_loss_lambda=0.0 \
         losses.latent_mixup_loss_lambda=0.0 \
         losses.face_contour_loss_lambda=0.0 \

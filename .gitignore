@@ -160,3 +160,7 @@ debug.sh
 # Bernardo
 .hydra/
 experiments_WITH_3DMM_CONSISTENCY_CONSTRAINTS/
+dcface/src/MICA/demo/output
+dcface/batch_samples
+dcface/src/MICA/models/models_weights/arcface-torch
+dcface/src/MICA/data

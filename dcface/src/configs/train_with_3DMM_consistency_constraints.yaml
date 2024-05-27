@@ -14,11 +14,13 @@ defaults:
   - logger: wandb.yaml
   - model: default.yaml
   - recognition: default.yaml
+  - recognition_eval: default.yaml
+  - reconstruction: default.yaml
   - external_mapping: default.yaml
   - label_mapping: default.yaml
-  - recognition_eval: default.yaml
   - optimizer: default.yaml
-  - losses: default.yaml
+  # - losses: default.yaml                                      # original
+  - losses: default_with_3DMM_consistency_constraints.yaml      # Bernardo
   - lightning: default.yaml
   # debugging config (enable through command line, e.g. `python train.py debug=default)
   - debug: null
