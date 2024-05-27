@@ -12,8 +12,8 @@ root = pyrootutils.setup_root(
 dotenv.load_dotenv(dotenv_path=root.parent.parent / '.env', override=True)
 # dotenv.load_dotenv(dotenv_path=root.parent.parent / '.env_with_3DMM_consistency_constraints', override=True)
 
-# os.environ["DATA_ROOT"] = os.path.join(root, 'data')                                     # original
-os.environ["DATA_ROOT"] = '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace'   # Bernardo
+os.environ["DATA_ROOT"] = os.path.join(root, 'data')                                         # original
+# os.environ["DATA_ROOT"] = '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace'   # Bernardo
 
 os.environ["HYDRA_FULL_ERROR"] = '1'
 
