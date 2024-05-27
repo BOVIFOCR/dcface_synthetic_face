@@ -2,7 +2,8 @@
 # CUDA_VISIBLE_DEVICES=0,1 python src/train.py \
 # python src/train.py \
 
-BATCH_GPU=8        # duo     ( 9.6GB)
+BATCH_GPU=2
+# BATCH_GPU=8      # duo     ( 9.6GB)
 # BATCH_GPU=16     # duo     (10.0GB)
 # BATCH_GPU=32     # duo     (17.0GB)
 # BATCH_GPU=256    # daugman (40.0GB)
