@@ -144,7 +144,7 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
             if batch_key == 'image' or batch_key == 'orig' or batch_key == 'id_image' or batch_key == 'extra_image' or batch_key == 'extra_orig' \
                or batch_key == 'noisy_images' or batch_key == 'noise_pred':
                 for idx_img, img_torch in enumerate(batch[batch_key]):
-                    img_rgb = ((img_torch.permute(1, 2, 0).cpu().numpy() + 1) * 127.5).astype(np.uint8)
+                    img_rgb = ((img_torch.permute(1, 2, 0).detach().cpu().numpy() + 1) * 127.5).astype(np.uint8)
                     img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
                     file_name = f'{batch_key}_{str(idx_img).zfill(4)}.png'
                     file_path = os.path.join(dir_save_batch, file_name)
