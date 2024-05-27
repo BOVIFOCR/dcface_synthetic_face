@@ -21,10 +21,16 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from MICA.configs.config import cfg
-from MICA.micalib.renderer import MeshShapeRenderer
-from MICA.models.flame import FLAME
-from MICA.utils.masking import Masking
+try:
+    from MICA.configs.config import cfg
+    from MICA.micalib.renderer import MeshShapeRenderer
+    from MICA.models.flame import FLAME
+    from MICA.utils.masking import Masking
+except ModuleNotFoundError:
+    from configs.config import cfg
+    from micalib.renderer import MeshShapeRenderer
+    from models.flame import FLAME
+    from utils.masking import Masking
 
 
 class BaseModel(nn.Module):

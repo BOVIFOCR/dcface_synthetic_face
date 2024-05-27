@@ -23,9 +23,14 @@ sys.path.append("./nfclib")
 import torch
 import torch.nn.functional as F
 
-from MICA.models.arcface import Arcface
-from MICA.models.generator import Generator
-from MICA.micalib.base_model import BaseModel
+try:
+    from MICA.models.arcface import Arcface
+    from MICA.models.generator import Generator
+    from MICA.micalib.base_model import BaseModel
+except ModuleNotFoundError:
+    from models.arcface import Arcface
+    from models.generator import Generator
+    from micalib.base_model import BaseModel
 
 from loguru import logger
 

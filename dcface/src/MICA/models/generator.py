@@ -19,7 +19,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as Functional
 
-from MICA.models.flame import FLAME
+try:
+    from MICA.models.flame import FLAME
+except ModuleNotFoundError:
+    from models.flame import FLAME
 
 
 def kaiming_leaky_init(m):

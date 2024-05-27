@@ -16,6 +16,7 @@
 
 
 import pickle
+import sys, os
 
 import numpy as np
 import torch
@@ -44,11 +45,14 @@ class Masking(nn.Module):
     def __init__(self, config):
         super(Masking, self).__init__()
         # with open('./data/FLAME2020/FLAME_masks/FLAME_masks.pkl', 'rb') as f:
-        with open('./src/MICA/data/FLAME2020/FLAME_masks/FLAME_masks.pkl', 'rb') as f:
+        flame_masks_path = os.path.join(os.path.dirname(__file__), '..', 'data/FLAME2020/FLAME_masks/FLAME_masks.pkl')
+        with open(flame_masks_path, 'rb') as f:
             ss = pickle.load(f, encoding='latin1')
             self.masks = Struct(**ss)
 
-        with open('./src/MICA/data/FLAME2020/generic_model.pkl', 'rb') as f:
+        # with open('./src/MICA/data/FLAME2020/generic_model.pkl', 'rb') as f:
+        generic_model_path = os.path.join(os.path.dirname(__file__), '..', 'data/FLAME2020/generic_model.pkl')
+        with open(generic_model_path, 'rb') as f:
             ss = pickle.load(f, encoding='latin1')
             flame_model = Struct(**ss)
 

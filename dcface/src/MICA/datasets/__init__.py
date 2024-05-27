@@ -20,10 +20,12 @@ import numpy as np
 from torch.utils.data import ConcatDataset
 import torch
 
-# from datasets.base import BaseDataset
-# from datasets.base_multitask_facerecognition import BaseDataset_MultitaskFaceRecognition
-from MICA.datasets.base import BaseDataset
-from MICA.datasets.base_multitask_facerecognition import BaseDataset_MultitaskFaceRecognition
+try:
+    from datasets.base import BaseDataset
+    from datasets.base_multitask_facerecognition import BaseDataset_MultitaskFaceRecognition
+except ModuleNotFoundError:
+    from MICA.datasets.base import BaseDataset
+    from MICA.datasets.base_multitask_facerecognition import BaseDataset_MultitaskFaceRecognition
 
 
 # Bernardo
