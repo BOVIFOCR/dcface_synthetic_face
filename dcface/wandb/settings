@@ -1,0 +1,5 @@
+[default]
+entity = biesseck
+project = bjgbiesseck_mica_with_dcface
+base_url = https://api.wandb.ai
+

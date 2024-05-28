@@ -189,9 +189,45 @@ def calc_identity_consistency_loss(eps, timesteps, noisy_images, batch, pl_modul
 
 
 # Bernardo
-def calc_3dmm_consistency_loss(eps, timesteps, noisy_images, batch, pl_module, ):
-    reconstruction_model = pl_module.reconstruction_model
+def euclid_distance(batch1, batch2):
+    assert batch1.shape == batch2.shape
+    distances = torch.norm(batch1 - batch2, dim=1)
+    return distances
 
+
+# Bernardo
+def calc_3dmm_consistency_loss(eps, timesteps, noisy_images, batch, pl_module, ):
+    # cossim_loss_center = calc_time_depenent_loss(x0_pred_feature, id_feature,
+    #                                                     timesteps=timesteps,
+    #                                                     version=pl_module.hparams.losses.identity_consistency_loss_version,
+    #                                                     max_timesteps=pl_module.hparams.sampler.num_train_timesteps,
+    #                                                     return_avg=False,
+    #                                                     )
+
+    reconstruction_model = pl_module.reconstruction_model
+    scheduler = pl_module.noise_scheduler
+    recognition_model = pl_module.recognition_model
+
+    x0_pred = calculate_x0_from_eps(eps, noisy_images, timesteps, scheduler)
+    x0_pred_feature, spatial = recognition_model(x0_pred)
+    x0_pred_norm = torch.norm(x0_pred_feature, 2, -1, keepdim=True)
+    x0_pred_feature = x0_pred_feature / x0_pred_norm
+
+    id_image = batch['id_image']
+    id_feature, _ = recognition_model(id_image)
+    id_feature_norm = torch.norm(id_feature, 2, -1, keepdim=True)
+    id_feature = id_feature / id_feature_norm
+
+    x0_pred_pointcloud, x0_pred_3dmm, x0_pred_render_image = reconstruction_model(x0_pred_feature)
+    id_image_pointcloud, id_image_3dmm, id_image_render_image = reconstruction_model(id_feature)
+
+    euclDist_x0Pred_idImage = euclid_distance(x0_pred_3dmm, id_image_3dmm)
+
+    threeDMM_loss = euclDist_x0Pred_idImage.mean()
+    return threeDMM_loss, \
+           x0_pred, id_image, \
+           x0_pred_pointcloud, x0_pred_3dmm, x0_pred_render_image, \
+           id_image_pointcloud, id_image_3dmm, id_image_render_image
 
     '''
     scheduler = pl_module.noise_scheduler

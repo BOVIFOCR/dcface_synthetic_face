@@ -23,6 +23,8 @@ from src.recognition.reconstruction_helper import ReconstructionModel, make_3d_f
 import torchmetrics
 from functools import partial
 
+from pytorch3d.io import save_ply, save_obj
+
 
 class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
     """main class"""
@@ -135,22 +137,30 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
         pass
 
 
-    def save_batch(self, batch, batch_idx):
-        dir_save_batch = f'batch_samples/batch_{str(batch_idx).zfill(6)}'
+    def save_batch(self, current_epoch, batch_idx, batch, output_dir):
+        dir_save_batch = os.path.join(output_dir, f'batch_samples/epoch_{str(current_epoch).zfill(3)}/batch_{str(batch_idx).zfill(6)}')
         os.makedirs(dir_save_batch, exist_ok=True)
         # print(f'Saving batch {batch_idx}')
 
         for batch_key in batch.keys():
-            if batch_key == 'image' or batch_key == 'orig' or batch_key == 'id_image' or batch_key == 'extra_image' or batch_key == 'extra_orig' \
-               or batch_key == 'noisy_images' or batch_key == 'noise_pred':
-                for idx_img, img_torch in enumerate(batch[batch_key]):
-                    img_rgb = ((img_torch.permute(1, 2, 0).detach().cpu().numpy() + 1) * 127.5).astype(np.uint8)
-                    img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
-                    file_name = f'{batch_key}_{str(idx_img).zfill(4)}.png'
-                    file_path = os.path.join(dir_save_batch, file_name)
-                    cv2.imwrite(file_path, img_bgr)
-            else:
-                print(f"batch[{batch_key}]: {batch[batch_key]}")
+            if not batch[batch_key] is None:
+                if batch_key == 'image' or batch_key == 'orig' or batch_key == 'id_image' or batch_key == 'extra_image' or batch_key == 'extra_orig' \
+                or batch_key == 'noisy_images' or batch_key == 'noise_pred' or batch_key == 'x0_pred':
+                    for idx_img, img_torch in enumerate(batch[batch_key]):
+                        img_rgb = ((img_torch.permute(1, 2, 0).detach().cpu().numpy() + 1) * 127.5).astype(np.uint8)
+                        img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
+                        file_name = f'{batch_key}_{str(idx_img).zfill(4)}.png'
+                        file_path = os.path.join(dir_save_batch, file_name)
+                        cv2.imwrite(file_path, img_bgr)
+                elif 'pointcloud' in batch_key:
+                    faces = self.reconstruction_model.backbone.render.faces[0].cpu()
+                    for idx_pc, pc_torch in enumerate(batch[batch_key]):
+                        pc_file_name = f'{batch_key}_{str(idx_pc).zfill(4)}'
+                        save_ply(f'{dir_save_batch}/{pc_file_name}.ply', pc_torch, faces=faces)
+                        # save_obj(f'{dir_save_batch}/{pc_file_name}.obj', pc_torch, faces=faces)
+                else:
+                    # print(f"batch[{batch_key}]: {batch[batch_key]}")
+                    pass
 
 
     def shared_step(self, batch, batch_idx, stage='train', optimizer_idx=0, *args, **kwargs):
@@ -196,17 +206,28 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
 
             # 3D consistency constraint
             if self.hparams.losses.threeDMM_consistency_loss_lambda > 0:
-                # batch.keys(): dict_keys(['image', 'index', 'orig', 'class_label', 'human_label', 'id_image', 'extra_image', 'extra_index', 'extra_orig'])
-                batch['noisy_images'] = noisy_images
-                batch['noise_pred'] = noise_pred
-                self.save_batch(batch, batch_idx)
-                sys.exit(0)
-
-                threeDMM_loss = calc_3dmm_consistency_loss(eps=noise_pred, timesteps=timesteps,
+                threeDMM_loss, \
+                x0_pred, id_image, \
+                x0_pred_pointcloud,  x0_pred_3dmm, x0_pred_render_image, \
+                id_image_pointcloud, id_image_3dmm, id_image_render_image = calc_3dmm_consistency_loss(eps=noise_pred, timesteps=timesteps,
                                                            noisy_images=noisy_images, batch=batch,
                                                            pl_module=self)
                 total_loss = total_loss + threeDMM_loss * self.hparams.losses.threeDMM_consistency_loss_lambda
                 loss_dict[f'{stage}/3dmm_loss'] = threeDMM_loss
+
+                if batch_idx == 0:
+                    # batch.keys(): dict_keys(['image', 'index', 'orig', 'class_label', 'human_label', 'id_image', 'extra_image', 'extra_index', 'extra_orig'])
+                    batch['noisy_images'] = noisy_images
+                    batch['noise_pred'] = noise_pred
+                    batch['x0_pred'] = x0_pred
+                    batch['x0_pred_pointcloud'] = x0_pred_pointcloud
+                    batch['x0_pred_3dmm'] = x0_pred_3dmm
+                    batch['x0_pred_render_image'] = x0_pred_render_image
+                    batch['id_image_pointcloud'] = id_image_pointcloud
+                    batch['id_image_3dmm'] = id_image_3dmm
+                    batch['id_image_render_image'] = id_image_render_image
+                    self.save_batch(self.current_epoch, batch_idx, batch, self.hparams.paths.output_dir)
+                    # sys.exit(0)
 
             loss_dict[f'{stage}/total_loss'] = total_loss
 

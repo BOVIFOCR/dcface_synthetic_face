@@ -301,34 +301,24 @@ class ReconstructionModel(nn.Module):
         # self.center = center
 
 
-    def forward(self, x, orig_images=None):
+    def get_arcface_embedding(self, x):
+        embedd = F.normalize(self.backbone.arcface(x))
+        return embedd
 
-        if orig_images is not None and orig_images.shape[2] == self.size:
-            x = orig_images
 
-        elif x.shape[2] != self.size or x.shape[3] != self.size:
-            print('why is this happening?')
-            quantized_x = self.quantize_images(x)
-            x = self.resize_and_normalize(quantized_x, device=x.device)
+    def forward(self, embedd):
+        pred_pointcloud, pred_3dmm = self.backbone.flameModel(embedd)
+        render_image = None
+        # rendering = self.backbone.render.render_mesh(pred_pointcloud)
+        # render_image = (rendering.cpu().numpy().transpose(1, 2, 0).copy() * 255)[:, :, [2, 1, 0]]
+        # render_image = np.minimum(np.maximum(image, 0), 255).astype(np.uint8)
+        # print('pred_canonical_vertices.shape:', pred_canonical_vertices.shape)
+        # print('pred_shape_code.shape:', pred_shape_code.shape)
+        # sys.exit(0)
+        return pred_pointcloud, pred_3dmm, render_image
+        
 
-        if self.swap_channel:
-            x = torch.flip(x, dims=[1])
-
-        # from general_utils import img_utils
-        # import cv2
-        # cv2.imwrite('/mckim/temp/temp.png', img_utils.tensor_to_numpy(x[0].cpu()))
-        feature, norm, spatials = self.backbone(x, return_spatial=self.recognition_config.return_spatial)
-
-        if self.recognition_config.normalize_feature:
-            feature = feature
-        else:
-            feature = feature * norm
-
-        if self.recognition_config.return_spatial:
-            return feature, spatials
-        else:
-            return feature
-
+    '''
     def classify(self, features, norms, label):
         return self.head(features, norms, label)
 
@@ -358,6 +348,7 @@ class ReconstructionModel(nn.Module):
         out = resize_images(x, resizer=self.resizer, ToTensor=self.totensor,
                             mean=self.mean, std=self.std, device=device)
         return out
+    '''
 
 
 def make_3d_face_reconstruction_model(reconstruction_config, enable_training=False):
