@@ -106,7 +106,7 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
         return [opt], []
     
     def load_state_dict(self, state_dict: 'OrderedDict[str, Tensor]', strict: bool = True):
-        result = super(Trainer, self).load_state_dict(state_dict, strict=False)
+        result = super(TrainerWith3DMMConsistencyConstraints, self).load_state_dict(state_dict, strict=False)
         if result.missing_keys:
             print('\n\n\n\nMissing Keys during Loading statedict')
             print(result.missing_keys)

@@ -11,7 +11,8 @@ BATCH_GPU=8        # duo     ( 9.6GB)
 DATA_MODULE=casia_webface                 # original
 # DATA_MODULE=casia_webface_imgs_crops    # Bernardo
 
-ThreeDMM_LOSS_LAMBDA=0.05                 # same as 'identity_consistency_loss_lambda'
+ThreeDMM_LOSS_LAMBDA=0.005
+# ThreeDMM_LOSS_LAMBDA=0.05                 # same as 'identity_consistency_loss_lambda'
 
 
 python src/train_with_3DMM_consistency_constraints.py \
