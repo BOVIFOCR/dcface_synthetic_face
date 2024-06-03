@@ -3,6 +3,8 @@ import numpy as np
 import glob
 from argparse import ArgumentParser
 import shutil
+import random
+random.seed(440)
 
 
 def parse_args():
@@ -11,6 +13,8 @@ def parse_args():
     parser.add_argument('--img_ext', type=str, default='.png')
     parser.add_argument('--str_pattern', type=str, default='')
     parser.add_argument('--output_path', type=str, default='/datasets2/bjgbiesseck/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids')
+    parser.add_argument('--shuffle', action='store_true')
+    parser.add_argument('--num_imgs', type=int, default=-1)   # -1 means all found files
     args = parser.parse_args()
     return args
 
@@ -52,7 +56,15 @@ def main(args):
 
     imgs_paths = find_all_files(args.input_path, extensions=[args.img_ext])
     # print('imgs_paths:', imgs_paths)
+    
+    if args.shuffle:
+        random.shuffle(imgs_paths)
 
+    if args.num_imgs > -1:
+        print(f'Selecting only {args.num_imgs} files')
+        imgs_paths = imgs_paths[:args.num_imgs]
+    
+    print(f'Copying images')
     copy_imgs_to_folder(imgs_paths, args.str_pattern, args.output_path)
 
 
