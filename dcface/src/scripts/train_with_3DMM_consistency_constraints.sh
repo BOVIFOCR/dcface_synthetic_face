@@ -3,15 +3,16 @@
 # python src/train.py \
 
 # BATCH_GPU=2
-BATCH_GPU=8        # duo     ( 9.6GB)
-# BATCH_GPU=16     # duo     (10.0GB)
+# BATCH_GPU=8      # duo     ( 9.6GB)
+BATCH_GPU=16       # duo     (10.0GB)
 # BATCH_GPU=32     # duo     (17.0GB)
 # BATCH_GPU=256    # daugman (40.0GB)
 
 DATA_MODULE=casia_webface                 # original
 # DATA_MODULE=casia_webface_imgs_crops    # Bernardo
 
-ThreeDMM_LOSS_LAMBDA=0.005
+ThreeDMM_LOSS_LAMBDA=0.001
+# ThreeDMM_LOSS_LAMBDA=0.005
 # ThreeDMM_LOSS_LAMBDA=0.05                 # same as 'identity_consistency_loss_lambda'
 
 

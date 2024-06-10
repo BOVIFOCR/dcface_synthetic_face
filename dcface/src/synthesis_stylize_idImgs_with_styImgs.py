@@ -2,6 +2,7 @@ import pandas as pd
 import pyrootutils
 import dotenv
 import os, sys
+import json
 import torch
 root = pyrootutils.setup_root(
     search_from=__file__,
@@ -35,6 +36,17 @@ def natural_sort(l):
     return sorted(l, key=alphanum_key)
 
 
+# Bernardo
+def load_from_json(filename):
+    with open(filename, 'r') as f:
+        return json.load(f)
+
+
+# Bernardo
+def adjust_paths_idImgs_styImgs(dict_map_idImgs_styImgs, id_imgs_paths, sty_imgs_paths):
+    pass
+
+
 def main():
 
     parser = ArgumentParser()
@@ -43,7 +55,7 @@ def main():
     parser.add_argument('--num_image_per_subject', type=int, default=1)
     parser.add_argument('--num_subject', type=int, default=1)
     parser.add_argument('--seed', type=int, default=123)
-    parser.add_argument('--batch_size', type=int, default=256)
+    parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--num_workers', type=int, default=0)
     parser.add_argument('--num_partition', type=int, default=1)
     parser.add_argument('--partition_idx', type=int, default=0)
@@ -51,6 +63,7 @@ def main():
     parser.add_argument('--save_root', type=str, default=None)
     parser.add_argument('--id_images_root', default='sample_images/id_images/2377.jpg')
     parser.add_argument('--style_images_root', type=str, default='sample_images/style_images/combined')
+    parser.add_argument('--file_map_id_sty_imgs', type=str, default='/datasets2/bjgbiesseck/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids/mapping_idImg=dcfaceOriginal10000SyntheticIdsToStyImg_styImg=1CASIAWebFace.json')
 
     parser.add_argument('--style_sampling_method', type=str, default='list',
                         choices=['random', 'feature_sim_center:topk_sampling_top1',
@@ -64,6 +77,7 @@ def main():
     args.id_images_root = os.path.join(root, args.id_images_root)
     args.style_images_root = os.path.join(root, args.style_images_root)
 
+    print(f'\nLoading checkpoint: \'{args.ckpt_path}\'')
     ckpt = torch.load(os.path.join(root, args.ckpt_path))
     model_hparam = ckpt['hyper_parameters']
     model_hparam['unet_config']['params']['pretrained_model_path'] = os.path.join(root, model_hparam['unet_config']['params']['pretrained_model_path'])
@@ -75,12 +89,16 @@ def main():
     model_hparam['_partial_'] = True
 
     # load pl_module
+    print('')
     pl_module: LightningModule = hydra.utils.instantiate(model_hparam)()
     print('Instantiated ', model_hparam['_target_'])
+
+    print(f'\nSetting loaded weights...')
     pl_module.load_state_dict(ckpt['state_dict'], strict=True)
     pl_module.to('cuda')
     pl_module.eval()
 
+    '''
     # load style dataset (training data
     if args.style_images_root == 'train':
         dataconfig = omegaconf.OmegaConf.create(model_hparam['datamodule'].keywords['keywords'])
@@ -93,12 +111,26 @@ def main():
     else:
         style_images = get_all_files(args.style_images_root, extension_list=['.png', '.jpg', '.jpeg'])
         style_images = natural_sort(style_images)
+        # print('style_images:', style_images)
+        # sys.exit(0)
         style_dataset = ListDatasetWithIndex(style_images, flip_color=True)
         assert len(style_dataset) > 0, args.style_images_root
+    '''
+
+    # load style images
+    style_images = get_all_files(args.style_images_root, extension_list=['.png', '.jpg', '.jpeg'])
+    style_images = natural_sort(style_images)
+    # print('style_images:', style_images)
+    # sys.exit(0)
+    style_dataset = ListDatasetWithIndex(style_images, flip_color=True)
+    assert len(style_dataset) > 0, args.style_images_root
 
     # load id images
     if os.path.isdir(args.id_images_root):
-        id_images = get_all_files(args.id_images_root, extension_list=['.png', '.jpg', '.jpeg'])
+        # id_images = get_all_files(args.id_images_root, extension_list=['.png', '.jpg', '.jpeg'])
+        id_images = get_all_files(args.id_images_root, extension_list=['.png', '.jpg', '.jpeg'], sorted=True)
+        # print('id_images:', id_images)
+        # sys.exit(0)
         if len(id_images) < args.num_subject:
             id_images = id_images * args.num_subject
         id_dataset = ListDatasetWithIndex(id_images, flip_color=True)
@@ -109,6 +141,11 @@ def main():
     else:
         print('id_images_root is not a file or directory')
         raise ValueError(args.id_images_root)
+    
+    # print(f'Loading dict map: {args.file_map_id_sty_imgs}')
+    # dict_map_idImgs_styImgs = load_from_json(args.file_map_id_sty_imgs)
+    # # print('dict_map_idImgs_styImgs:', dict_map_idImgs_styImgs)
+    # dict_map_idImgs_styImgs = adjust_paths_idImgs_styImgs(dict_map_idImgs_styImgs, id_imgs_paths, sty_imgs_paths)
 
     if args.save_root is None:
         runname_name = os.path.basename(args.ckpt_path).split('.')[0]
