@@ -172,7 +172,7 @@ def style_image_sampler(style_sampling_method, num_image_per_subject, id_index_s
 
 def dataset_generate(pl_module, style_dataset, id_dataset, num_image_per_subject,
                      num_subject=10000, batch_size=64, num_workers=0, save_root='./', style_sampling_method='random',
-                     num_partition=1, partition_idx=0, writer=None):
+                     num_partition=1, partition_idx=0, writer=None, start_label=-1):
     os.makedirs(save_root, exist_ok=True)
     print(save_root)
 
@@ -197,23 +197,27 @@ def dataset_generate(pl_module, style_dataset, id_dataset, num_image_per_subject
     for batch in tqdm(datagen_dataloader, total=len(datagen_dataloader), desc='Generating Dataset: '):
         start_time = time.time()
         id_images, style_images, labels, names = batch
-        plotting_images = sample_batch(id_images, style_images, pl_module, seed=labels[0].item())
-        
-        end_time = time.time()
-        total_elapsed_time = end_time - start_time
-        print('    Total time: %.2fs    Time per sample: %.2fs' % (total_elapsed_time, total_elapsed_time/len(batch)))
-        
-        for image, label, name in zip(plotting_images, labels, names):
-            save_name = f"{label.item()}/{name.item()}.jpg"
-            if writer is not None:
-                writer.write(image, save_name)
-                writer.mark_done('image', save_name)
-            else:
-                save_path = os.path.join(save_root, save_name)
-                print('    Saving output image:', save_path)
-                os.makedirs(os.path.dirname(save_path), exist_ok=True)
-                cv2.imwrite(save_path, image)
-        print('----------')
+
+        # Bernardo
+        if torch.any(labels >= start_label):
+
+            plotting_images = sample_batch(id_images, style_images, pl_module, seed=labels[0].item())
+
+            end_time = time.time()
+            total_elapsed_time = end_time - start_time
+            print('    Total time: %.2fs    Time per sample: %.2fs' % (total_elapsed_time, total_elapsed_time/len(batch)))
+
+            for image, label, name in zip(plotting_images, labels, names):
+                save_name = f"{label.item()}/{name.item()}.jpg"
+                if writer is not None:
+                    writer.write(image, save_name)
+                    writer.mark_done('image', save_name)
+                else:
+                    save_path = os.path.join(save_root, save_name)
+                    print('    Saving output image:', save_path)
+                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                    cv2.imwrite(save_path, image)
+            print('----------')
 
 
 

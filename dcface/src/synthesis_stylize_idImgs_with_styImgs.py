@@ -70,6 +70,9 @@ def main():
                                  'feature_sim_center:top1_sampling_topk', 'list'])
     parser.add_argument('--use_writer', action='store_true')
 
+    # Bernardo
+    parser.add_argument('--start_label', type=int, default=-1)   # -1 = start from first label and first image 
+
     args = parser.parse_args()
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -169,7 +172,7 @@ def main():
                      num_image_per_subject=args.num_image_per_subject, num_subject=args.num_subject,
                      batch_size=args.batch_size, num_workers=args.num_workers, save_root=args.save_root,
                      style_sampling_method=args.style_sampling_method,
-                     num_partition=args.num_partition, partition_idx=args.partition_idx, writer=writer)
+                     num_partition=args.num_partition, partition_idx=args.partition_idx, writer=writer, start_label=args.start_label)
 
     if args.use_writer:
         writer.close()
