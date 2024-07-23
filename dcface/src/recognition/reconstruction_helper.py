@@ -4,6 +4,7 @@ import os
 import torch
 from torch import nn as nn
 import numpy as np
+import cv2
 from PIL import Image
 import torch.nn.functional as F
 import torchvision.transforms as transforms
@@ -284,10 +285,10 @@ def make_recognition_model(recognition_config, enable_training=False):
 '''
 
 
-class ReconstructionModel(nn.Module):
+class MICA_ReconstructionModel(nn.Module):
 
     def __init__(self, backbone, reconstruction_config):
-        super(ReconstructionModel, self).__init__()
+        super(MICA_ReconstructionModel, self).__init__()
         self.backbone = backbone
         self.reconstruction_config = reconstruction_config
 
@@ -300,11 +301,9 @@ class ReconstructionModel(nn.Module):
         # self.head = head
         # self.center = center
 
-
     def get_arcface_embedding(self, x):
         embedd = F.normalize(self.backbone.arcface(x))
         return embedd
-
 
     def forward(self, embedd):
         pred_pointcloud, pred_3dmm = self.backbone.flameModel(embedd)
@@ -316,39 +315,75 @@ class ReconstructionModel(nn.Module):
         # print('pred_shape_code.shape:', pred_shape_code.shape)
         # sys.exit(0)
         return pred_pointcloud, pred_3dmm, render_image
-        
 
-    '''
-    def classify(self, features, norms, label):
-        return self.head(features, norms, label)
 
-    def feature_normalize(self, input_z):
-        input_norm = torch.norm(input_z, 2, -1, keepdim=True)
-        input_z = input_z / input_norm
-        return input_z, input_norm
 
-    def ce_loss(self, input, label):
-        input_z, _ = self.forward(input)
-        input_norm = torch.norm(input_z, 2, -1, keepdim=True)
-        input_z = input_z / input_norm
-        input_z_logits, _ = self.classify(input_z, input_norm, label)
-        loss_ce = F.cross_entropy(input_z_logits, label)
-        return loss_ce
+class BFM_ReconstructionModel(nn.Module):
 
-    def quantize_images(self, x):
-        if self.mean.device != x.device:
-            self.mean = self.mean.to(x.device)
-            self.std = self.std.to(x.device)
-        x = (x * self.std) + self.mean
-        x = (255.0 * x + 0.5).clamp(0.0, 255.0)
-        x = x.detach().cpu().numpy().astype(np.uint8)
-        return x
+    def __init__(self, backbone, reconstruction_config):
+        super(BFM_ReconstructionModel, self).__init__()
+        self.backbone = backbone
+        self.reconstruction_config = reconstruction_config
 
-    def resize_and_normalize(self, x, device):
-        out = resize_images(x, resizer=self.resizer, ToTensor=self.totensor,
-                            mean=self.mean, std=self.std, device=device)
-        return out
-    '''
+        self.size = 224
+        # self.resizer = make_resizer("PIL", "bilinear", (self.size, self.size))    # original
+        self.resizer = transforms.Resize((self.size, self.size))                    # Bernardo
+        self.totensor = transforms.ToTensor()
+        self.mean = torch.Tensor([0.5, 0.5, 0.5]).view(1, 3, 1, 1)
+        self.std = torch.Tensor([0.5, 0.5, 0.5]).view(1, 3, 1, 1)
+        self.swap_channel = True
+        # self.head = head
+        # self.center = center
+
+    def get_arcface_embedding(self, x):
+        embedd = F.normalize(self.backbone.arcface(x))
+        return embedd
+    
+    def tensor_to_cv2_image(self, image_tensor):
+        image_tensor = image_tensor.cpu().detach()
+        image_tensor = (image_tensor + 1) / 2
+        image_tensor = (image_tensor * 255).clamp(0, 255).byte()
+        image_np = image_tensor.numpy().transpose(1, 2, 0)
+        img_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+        return img_bgr
+
+    def save_normalized_tensor_img(self, image_tensor, file_path):
+        image_tensor = image_tensor.cpu().detach()
+        image_tensor = (image_tensor + 1) / 2
+        image_tensor = (image_tensor * 255).clamp(0, 255).byte()
+        to_pil = transforms.ToPILImage()
+        image = to_pil(image_tensor)
+        image.save(file_path, format='PNG')
+    
+    def resize_batch(self, batch_img):
+        resized_batch_img = torch.stack([self.resizer(image) for image in batch_img])
+        return resized_batch_img
+
+    def forward(self, batch_img):
+        with torch.no_grad():
+            batch_img = self.resize_batch(batch_img)
+            batch_id =    torch.zeros((batch_img.size(0), 80))
+            batch_exp =   torch.zeros((batch_img.size(0), 64))
+            batch_angle = torch.zeros((batch_img.size(0), 3))
+            batch_trans = torch.zeros((batch_img.size(0), 3))
+            for idx_img in range(batch_img.shape[0]):
+                img = batch_img[idx_img]
+                img = self.tensor_to_cv2_image(img)
+
+                # output = self.backbone.predict_base(img, out_dir='/home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/experiments_WITH_BFM_CONSISTENCY_CONSTRAINTS')
+                # output = self.backbone.predict_base(img)
+                output = self.backbone.predict_base_only_bfm_coeffs(img)   # output['id'], output['exp'], output['angle'], output['trans']
+                # print(f'{idx_img} - output:', output)
+                # print(f'{idx_img} - output.keys():', output.keys())
+
+                if len(output) > 0:
+                    batch_id[idx_img] =    output['id']
+                    batch_exp[idx_img] =   output['exp']
+                    batch_angle[idx_img] = output['angle']
+                    batch_trans[idx_img] = output['trans']
+            # sys.exit(0)
+            return batch_id, batch_exp, batch_angle, batch_trans
+
 
 
 def make_3d_face_reconstruction_model(reconstruction_config, enable_training=False):
@@ -356,49 +391,20 @@ def make_3d_face_reconstruction_model(reconstruction_config, enable_training=Fal
     if not reconstruction_config:
         return None
 
-    # if 'ir_101' == reconstruction_config.backbone:
-    #     print('making IR_101')
-    #     backbone = tface_model.IR_101(input_size=(112, 112))
-    #     backbone_name = 'ir_101'
-    # elif 'ir_50' == reconstruction_config.backbone:
-    #     print('making IR_50')
-    #     backbone_name = 'ir_50'
-    #     backbone = tface_model.IR_50(input_size=(112, 112))
     if 'MICA' == reconstruction_config.backbone:
         print('\nmaking MICA')
         backbone = tface_reconstruction_model.get_MICA(input_size=(112, 112))
-        # backbone_name = 'MICA'
+        model = MICA_ReconstructionModel(backbone=backbone, reconstruction_config=reconstruction_config)
+
+    elif 'BFM' == reconstruction_config.backbone:
+        print('\nmaking BFM (Basel Face Model)')
+        backbone = tface_reconstruction_model.get_BFM(input_size=(224, 224))
+        model = BFM_ReconstructionModel(backbone=backbone, reconstruction_config=reconstruction_config)
+
     else:
         raise NotImplementedError()
 
-    '''
-    head = return_head(head_name=reconstruction_config.head_name)
-
-    if reconstruction_config.ckpt_path:
-        print('loading backbone and head checkpoint from ')
-        print(reconstruction_config.ckpt_path)
-        statedict = torch.load(reconstruction_config.ckpt_path, map_location='cpu')['state_dict']
-        backbone.load_state_dict({k.replace("model.", ''): v for k, v in statedict.items() if 'model.' in k})
-        if head is not None:
-            head.load_state_dict({k.replace("head.", ''): v for k, v in statedict.items() if 'head.' in k})
-    else:
-        # load statedict
-        assert reconstruction_config.dataset == 'webface4m'
-        assert reconstruction_config.loss_fn == 'adaface'
-        print('Loading pretrained IR model trained with adaface webface4m')
-        model_statedict = download_ir_pretrained_statedict(backbone_name, 'webface4m', 'adaface')
-        backbone.load_state_dict(model_statedict, strict=True)
-
-    if reconstruction_config.center_path:
-        print('Loading precomputed center', reconstruction_config.center_path)
-        center = torch.load(reconstruction_config.center_path, map_location='cpu')['center']
-        center_emb = nn.Embedding(num_embeddings=center.shape[0], embedding_dim=center.shape[1])
-        center_emb.load_state_dict({'weight': center}, strict=True)
-    else:
-        center_emb = None
-    '''
-
-    model = ReconstructionModel(backbone=backbone, reconstruction_config=reconstruction_config)
+    # model = ReconstructionModel(backbone=backbone, reconstruction_config=reconstruction_config)
     if enable_training:
         print('enable training')
         pass

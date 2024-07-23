@@ -19,7 +19,7 @@ from src.recognition.external_mapping import make_external_mapping
 from src.recognition.label_mapping import make_label_mapping
 from src.recognition.recognition_helper import disabled_train
 from src.recognition.recognition_helper import RecognitionModel, make_recognition_model, same_config
-from src.recognition.reconstruction_helper import ReconstructionModel, make_3d_face_reconstruction_model
+from src.recognition.reconstruction_helper import MICA_ReconstructionModel, make_3d_face_reconstruction_model
 import torchmetrics
 from functools import partial
 
@@ -63,7 +63,7 @@ class TrainerWith3DMMConsistencyConstraints(pl.LightningModule):
             self.recognition_model_eval: RecognitionModel = make_recognition_model(self.hparams.recognition_eval)
 
         # 3D face reconstruction model
-        self.reconstruction_model: ReconstructionModel = make_3d_face_reconstruction_model(self.hparams.reconstruction)
+        self.reconstruction_model: MICA_ReconstructionModel = make_3d_face_reconstruction_model(self.hparams.reconstruction)
         self.reconstruction_model_eval = self.reconstruction_model
         # if same_config(self.hparams.reconstruction, self.hparams.reconstruction_eval, skip_keys=['return_spatial', 'center_path']):
         #     self.reconstruction_model_eval = self.reconstruction_model
