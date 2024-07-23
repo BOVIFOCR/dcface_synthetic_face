@@ -242,7 +242,7 @@ def calc_bfm_consistency_loss(eps, timesteps, noisy_images, batch, pl_module):
     euclDist_express_x0Pred_origImage = euclid_distance(x0_pred_exp, orig_exp)
     euclDist_pose_x0Pred_origImage    = euclid_distance(x0_pred_angle, orig_angle)
 
-    bfm_loss = euclDist_ident_x0Pred_idImage.mean() - (euclDist_express_x0Pred_origImage.mean() + euclDist_pose_x0Pred_origImage.mean())
+    bfm_loss = euclDist_ident_x0Pred_idImage.mean() + (euclDist_express_x0Pred_origImage.mean() + euclDist_pose_x0Pred_origImage.mean())
     return bfm_loss
 
 
