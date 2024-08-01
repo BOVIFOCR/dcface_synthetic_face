@@ -16,7 +16,8 @@ DATA_MODULE=casia_webface                 # original
 # ThreeDMM_LOSS_LAMBDA=0.05                 # same as 'identity_consistency_loss_lambda'
 
 # BFM_LOSS_LAMBDA=0.001
-BFM_LOSS_LAMBDA=0.005
+# BFM_LOSS_LAMBDA=0.005
+BFM_LOSS_LAMBDA=0.01
 # BFM_LOSS_LAMBDA=0.05                      # same as 'identity_consistency_loss_lambda'
 
 

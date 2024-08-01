@@ -340,12 +340,22 @@ class BFM_ReconstructionModel(nn.Module):
         return embedd
     
     def tensor_to_cv2_image(self, image_tensor):
-        image_tensor = image_tensor.cpu().detach()
-        image_tensor = (image_tensor + 1) / 2
-        image_tensor = (image_tensor * 255).clamp(0, 255).byte()
-        image_np = image_tensor.numpy().transpose(1, 2, 0)
-        img_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
-        return img_bgr
+        if len(image_tensor.shape) == 3:   # single image
+            image_tensor = image_tensor.cpu().detach()
+            image_tensor = (image_tensor + 1) / 2
+            image_tensor = (image_tensor * 255).clamp(0, 255).byte()
+            image_np = image_tensor.numpy().transpose(1, 2, 0)
+            img_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+            return img_bgr
+        
+        elif len(image_tensor.shape) == 4:   # batch
+            image_tensor = image_tensor.cpu().detach()
+            image_tensor = (image_tensor + 1) / 2
+            image_tensor = (image_tensor * 255).clamp(0, 255).byte()
+            image_np = image_tensor.numpy().transpose(0, 2, 3, 1)
+            # img_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+            img_bgr = image_np[..., ::-1]
+            return img_bgr
 
     def save_normalized_tensor_img(self, image_tensor, file_path):
         image_tensor = image_tensor.cpu().detach()
@@ -360,6 +370,30 @@ class BFM_ReconstructionModel(nn.Module):
         return resized_batch_img
 
     def forward(self, batch_img):
+        # batch
+        with torch.no_grad():
+            batch_img = self.resize_batch(batch_img)
+            
+            batch_img = self.tensor_to_cv2_image(batch_img)
+            output_batch = self.backbone.predict_base_batch(batch_img)
+            # print('output_batch.shape:', output_batch.shape)
+            # print('type(output_batch):', type(output_batch))
+            
+            if type(output_batch) is torch.Tensor:
+                batch_id    = output_batch[:, :80]
+                batch_exp   = output_batch[:, 80:144]
+                batch_angle = output_batch[:, 224:227]
+                batch_trans = output_batch[:, 254:]
+            else:
+                batch_id =    torch.zeros((batch_img.shape[0], 80), device='cuda:0')
+                batch_exp =   torch.zeros((batch_img.shape[0], 64), device='cuda:0')
+                batch_angle = torch.zeros((batch_img.shape[0], 3), device='cuda:0')
+                batch_trans = torch.zeros((batch_img.shape[0], 3), device='cuda:0')
+
+            return batch_id, batch_exp, batch_angle, batch_trans
+
+        '''
+        # single image
         with torch.no_grad():
             batch_img = self.resize_batch(batch_img)
             batch_id =    torch.zeros((batch_img.size(0), 80))
@@ -383,6 +417,7 @@ class BFM_ReconstructionModel(nn.Module):
                     batch_trans[idx_img] = output['trans']
             # sys.exit(0)
             return batch_id, batch_exp, batch_angle, batch_trans
+        '''
 
 
 
