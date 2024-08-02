@@ -378,7 +378,13 @@ class BFM_ReconstructionModel(nn.Module):
             output_batch = self.backbone.predict_base_batch(batch_img)
             # print('output_batch.shape:', output_batch.shape)
             # print('type(output_batch):', type(output_batch))
+
+            if type(output_batch) is torch.Tensor:
+                return output_batch
+            else:
+                return torch.zeros((batch_img.shape[0], 257), device='cuda:0')
             
+            '''
             if type(output_batch) is torch.Tensor:
                 batch_id    = output_batch[:, :80]
                 batch_exp   = output_batch[:, 80:144]
@@ -391,6 +397,7 @@ class BFM_ReconstructionModel(nn.Module):
                 batch_trans = torch.zeros((batch_img.shape[0], 3), device='cuda:0')
 
             return batch_id, batch_exp, batch_angle, batch_trans
+            '''
 
         '''
         # single image

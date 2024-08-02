@@ -15,7 +15,7 @@ from src.models.conditioner import make_condition
 from src.models import model_helper
 # from src.losses.consistency_loss import calc_identity_consistency_loss                              # original
 # from src.losses.consistency_loss import calc_identity_consistency_loss, calc_3dmm_consistency_loss  # Bernardo
-from src.losses.consistency_loss import calc_identity_consistency_loss, calc_bfm_consistency_loss     # Bernardo
+from src.losses.consistency_loss import calc_identity_consistency_loss, calculate_x0_from_eps, calc_identity_consistency_loss_precomputed_stylized_face, calc_bfm_consistency_loss, calc_bfm_consistency_loss_precomputed_stylized_face     # Bernardo
 from src.recognition.external_mapping import make_external_mapping
 from src.recognition.label_mapping import make_label_mapping
 from src.recognition.recognition_helper import disabled_train
@@ -164,6 +164,18 @@ class TrainerWithBFMConsistencyConstraints(pl.LightningModule):
                     pass
 
 
+    # Bernardo
+    def compute_stylized_face_and_features(self, eps, timesteps, noisy_images, batch, pl_module):
+        scheduler = pl_module.noise_scheduler
+        recognition_model = pl_module.recognition_model
+
+        x0_pred = calculate_x0_from_eps(eps, noisy_images, timesteps, scheduler)
+        x0_pred_feature, spatial = recognition_model(x0_pred)
+        x0_pred_norm = torch.norm(x0_pred_feature, 2, -1, keepdim=True)
+        x0_pred_feature = x0_pred_feature / x0_pred_norm
+        return x0_pred, x0_pred_feature, spatial
+
+
     def shared_step(self, batch, batch_idx, stage='train', optimizer_idx=0, *args, **kwargs):
         clean_images = batch['image']
         noise = torch.randn(clean_images.shape).to(clean_images.device)
@@ -193,12 +205,23 @@ class TrainerWithBFMConsistencyConstraints(pl.LightningModule):
                 loss_dict[f'{stage}/vq_loss'] = vqloss
                 total_loss = total_loss + vqloss
 
+
+            # Bernardo
+            x0_pred, x0_pred_feature, spatial = self.compute_stylized_face_and_features(eps=noise_pred, timesteps=timesteps,
+                                                                                        noisy_images=noisy_images, batch=batch,
+                                                                                        pl_module=self)
+
             # extra identity_consistency_loss_lambda
             if self.hparams.losses.identity_consistency_loss_lambda > 0 or \
                     self.hparams.losses.spatial_consistency_loss_lambda > 0:
-                id_loss, spatial_loss = calc_identity_consistency_loss(eps=noise_pred, timesteps=timesteps,
-                                                                       noisy_images=noisy_images, batch=batch,
-                                                                       pl_module=self)
+
+                # id_loss, spatial_loss = calc_identity_consistency_loss(eps=noise_pred, timesteps=timesteps,
+                #                                                        noisy_images=noisy_images, batch=batch,
+                #                                                        pl_module=self)
+                id_loss, spatial_loss = calc_identity_consistency_loss_precomputed_stylized_face(eps=noise_pred, timesteps=timesteps,
+                                                                                                 noisy_images=noisy_images, batch=batch, pl_module=self,
+                                                                                                 x0_pred=x0_pred, x0_pred_feature=x0_pred_feature, spatial=spatial)
+
                 total_loss = total_loss + id_loss * self.hparams.losses.identity_consistency_loss_lambda
                 if spatial_loss is not None:
                     total_loss = total_loss + spatial_loss * self.hparams.losses.spatial_consistency_loss_lambda
@@ -234,25 +257,24 @@ class TrainerWithBFMConsistencyConstraints(pl.LightningModule):
 
             # 3D BFM consistency constraint
             if self.hparams.losses.bfm_consistency_loss_lambda > 0:
-                bfm_loss = calc_bfm_consistency_loss(eps=noise_pred, timesteps=timesteps,
-                                                           noisy_images=noisy_images, batch=batch,
-                                                           pl_module=self)
+                # bfm_loss = calc_bfm_consistency_loss(eps=noise_pred, timesteps=timesteps,
+                #                                      noisy_images=noisy_images, batch=batch,
+                #                                      pl_module=self)
+                bfm_loss = calc_bfm_consistency_loss_precomputed_stylized_face(eps=noise_pred, timesteps=timesteps,
+                                                                               noisy_images=noisy_images, batch=batch, pl_module=self,
+                                                                               x0_pred=x0_pred, x0_pred_feature=x0_pred_feature, spatial=spatial,
+                                                                               hparams=self.hparams)
                 total_loss = total_loss + bfm_loss * self.hparams.losses.bfm_consistency_loss_lambda
                 loss_dict[f'{stage}/bfm_loss'] = bfm_loss
 
-                # if batch_idx == 0:
-                #     # batch.keys(): dict_keys(['image', 'index', 'orig', 'class_label', 'human_label', 'id_image', 'extra_image', 'extra_index', 'extra_orig'])
-                #     batch['noisy_images'] = noisy_images
-                #     batch['noise_pred'] = noise_pred
-                #     batch['x0_pred'] = x0_pred
-                #     batch['x0_pred_pointcloud'] = x0_pred_pointcloud
-                #     batch['x0_pred_3dmm'] = x0_pred_3dmm
-                #     batch['x0_pred_render_image'] = x0_pred_render_image
-                #     batch['id_image_pointcloud'] = id_image_pointcloud
-                #     batch['id_image_3dmm'] = id_image_3dmm
-                #     batch['id_image_render_image'] = id_image_render_image
-                #     self.save_batch(self.current_epoch, batch_idx, batch, self.hparams.paths.output_dir)
-                #     # sys.exit(0)
+                if batch_idx == 0:
+                    print(f'Saving batch {batch_idx} to \'{self.hparams.paths.output_dir}\'')
+                    # batch.keys(): dict_keys(['image', 'index', 'orig', 'class_label', 'human_label', 'id_image', 'extra_image', 'extra_index', 'extra_orig'])
+                    batch['noisy_images'] = noisy_images
+                    batch['noise_pred'] = noise_pred
+                    batch['x0_pred'] = x0_pred
+                    self.save_batch(self.current_epoch, batch_idx, batch, self.hparams.paths.output_dir)
+                    # sys.exit(0)
 
             loss_dict[f'{stage}/total_loss'] = total_loss
 

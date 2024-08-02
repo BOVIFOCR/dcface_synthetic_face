@@ -1,3 +1,4 @@
+import os, sys
 import numpy as np
 
 from src.general_utils.img_utils import temp_plot, prepare_text_img
@@ -189,6 +190,131 @@ def calc_identity_consistency_loss(eps, timesteps, noisy_images, batch, pl_modul
 
 
 # Bernardo
+def calc_identity_consistency_loss_precomputed_stylized_face(eps, timesteps, noisy_images, batch, pl_module,
+                                                             x0_pred, x0_pred_feature, spatial):
+    # scheduler = pl_module.noise_scheduler
+    recognition_model = pl_module.recognition_model
+    # x0_pred = calculate_x0_from_eps(eps, noisy_images, timesteps, scheduler)
+
+    # # visual
+    # for i in range(len(x0_pred)):
+    #     text = prepare_text_img(f't={timesteps[i]}', width=112, height=30) / 255.
+    #     text = torch.tensor(text.transpose(2,0,1)).to(clean_images.device)
+    #     vis = torch.cat([text, clean_images[i], noisy_images[i], x0_pred[i]], dim=1)
+    #     vis = vis.flip(0)
+    #     temp_plot(vis, path='/mckim/temp/temp_{}.png'.format(timesteps[i]))
+
+    # x0_pred_feature, spatial = recognition_model(x0_pred)
+    # x0_pred_norm = torch.norm(x0_pred_feature, 2, -1, keepdim=True)
+    # x0_pred_feature = x0_pred_feature / x0_pred_norm
+    
+    if recognition_model.center is not None and pl_module.hparams.losses.identity_consistency_loss_source == 'center':
+        center = recognition_model.center(batch['class_label'])
+        cossim_loss = calc_time_depenent_loss(x0_pred_feature, center,
+                                       timesteps=timesteps,
+                                       version=pl_module.hparams.losses.identity_consistency_loss_version,
+                                       max_timesteps=pl_module.hparams.sampler.num_train_timesteps,
+                                       )
+
+    elif pl_module.hparams.losses.identity_consistency_loss_source == 'image':
+        orig_feature, _ = recognition_model(batch['image'])
+        orig_feature_norm = torch.norm(orig_feature, 2, -1, keepdim=True)
+        orig_feature = orig_feature / orig_feature_norm
+        cossim_loss = calc_time_depenent_loss(x0_pred_feature, orig_feature,
+                                              timesteps=timesteps,
+                                              version=pl_module.hparams.losses.identity_consistency_loss_version,
+                                              max_timesteps=pl_module.hparams.sampler.num_train_timesteps,
+                                              )
+    # DCFace default
+    elif pl_module.hparams.losses.identity_consistency_loss_source == 'mix':
+        if pl_module.hparams.losses.identity_consistency_loss_center_source == 'center':
+            center = recognition_model.center(batch['class_label'])
+            cossim_loss_center = calc_time_depenent_loss(x0_pred_feature, center,
+                                                  timesteps=timesteps,
+                                                  version=pl_module.hparams.losses.identity_consistency_loss_version,
+                                                  max_timesteps=pl_module.hparams.sampler.num_train_timesteps,
+                                                  return_avg=False,
+                                                  )
+        # DCFace default
+        elif pl_module.hparams.losses.identity_consistency_loss_center_source == 'id_image':
+            id_feature, _ = recognition_model(batch['id_image'])
+            id_feature_norm = torch.norm(id_feature, 2, -1, keepdim=True)
+            id_feature = id_feature / id_feature_norm
+            cossim_loss_center = calc_time_depenent_loss(x0_pred_feature, id_feature,
+                                                        timesteps=timesteps,
+                                                        version=pl_module.hparams.losses.identity_consistency_loss_version,
+                                                        max_timesteps=pl_module.hparams.sampler.num_train_timesteps,
+                                                        return_avg=False,
+                                                        )
+        else:
+            raise ValueError(f'{pl_module.hparams.losses.identity_consistency_loss_center_source} '
+                             f'pl_module.hparams.losses.identity_consistency_loss_center_source not right')
+
+        orig_feature, _ = recognition_model(batch['image'])
+        orig_feature_norm = torch.norm(orig_feature, 2, -1, keepdim=True)
+        orig_feature = orig_feature / orig_feature_norm
+        cossim_loss_image = calc_time_depenent_loss(x0_pred_feature, orig_feature,
+                                       timesteps=timesteps,
+                                       version=pl_module.hparams.losses.identity_consistency_loss_version,
+                                       max_timesteps=pl_module.hparams.sampler.num_train_timesteps,
+                                       return_avg=False,
+                                       )
+
+        order = float(pl_module.hparams.losses.identity_consistency_mix_loss_version.split('_')[1])
+
+        if pl_module.hparams.losses.identity_consistency_loss_weight_start_bias > 0:
+            weight_start = pl_module.hparams.losses.identity_consistency_loss_weight_start_bias
+            assert weight_start < 1.0
+        else:
+            weight_start = 0.0
+
+        weights = np.linspace(weight_start, 1, pl_module.hparams.sampler.num_train_timesteps+1)**order
+        weights_tensor = torch.tensor(weights, dtype=cossim_loss_center.dtype, device=cossim_loss_center.device)
+        mix_weights = weights_tensor[timesteps]
+
+        cossim_loss = cossim_loss_center * mix_weights + cossim_loss_image * (1-mix_weights)
+
+        if pl_module.hparams.losses.identity_consistency_loss_time_cut > 0:
+            time_cut_ratio = pl_module.hparams.losses.identity_consistency_loss_time_cut
+            time_cut_index = int(len(weights_tensor) * time_cut_ratio)
+            cut_weight = torch.ones_like(weights_tensor)
+            cut_weight[:time_cut_index] = 0
+            cossim_loss = cossim_loss * cut_weight[timesteps]
+
+        cossim_loss = cossim_loss.mean()
+
+    elif pl_module.hparams.losses.identity_consistency_loss_source == 'id_image':
+        orig_feature, _ = recognition_model(batch['id_image'])
+        orig_feature_norm = torch.norm(orig_feature, 2, -1, keepdim=True)
+        orig_feature = orig_feature / orig_feature_norm
+        cossim_loss = calc_time_depenent_loss(x0_pred_feature, orig_feature,
+                                              timesteps=timesteps,
+                                              version=pl_module.hparams.losses.identity_consistency_loss_version,
+                                              max_timesteps=pl_module.hparams.sampler.num_train_timesteps,
+                                              )
+
+    if pl_module.hparams.losses.spatial_consistency_loss_lambda > 0.0:
+        pred_mean, pred_var = extract_mean_var(spatial)
+        orig_feature, orig_spatial = recognition_model(batch['image'])
+        orig_mean, orig_var = extract_mean_var(orig_spatial)
+        spat_mean_loss = calc_time_depenent_loss(pred_mean, orig_mean, timesteps=timesteps,
+                                                 version=pl_module.hparams.losses.spatial_consistency_loss_version,
+                                                 max_timesteps=pl_module.hparams.sampler.num_train_timesteps,
+                                                 metric='l1')
+        spat_var_loss = calc_time_depenent_loss(pred_var, orig_var, timesteps=timesteps,
+                                                version=pl_module.hparams.losses.spatial_consistency_loss_version,
+                                                max_timesteps=pl_module.hparams.sampler.num_train_timesteps,
+                                                metric='l1')
+        spatial_loss = (spat_mean_loss + spat_var_loss)/2
+    
+    # DCFace default
+    else:
+        spatial_loss = None
+
+    return cossim_loss, spatial_loss
+
+
+# Bernardo
 def euclid_distance(batch1, batch2):
     assert batch1.shape == batch2.shape
     distances = torch.norm(batch1 - batch2, dim=1)
@@ -245,6 +371,103 @@ def calc_bfm_consistency_loss(eps, timesteps, noisy_images, batch, pl_module):
     bfm_loss = euclDist_ident_x0Pred_idImage.mean() + (euclDist_express_x0Pred_origImage.mean() + euclDist_pose_x0Pred_origImage.mean())
     return bfm_loss
 
+
+# Bernardo
+hash_size=32
+hash_weights = torch.randn((3*112*112, hash_size), dtype=torch.float32, device='cuda')
+def compute_hash(tensor_batch):
+    # tensor_batch = tensor_batch.to('cuda')
+    B, C, H, W = tensor_batch.shape
+    flattened = tensor_batch.view(B, -1)
+    hash_tensor = torch.zeros((B, hash_size), dtype=torch.float32, device='cuda')
+    hash_tensor = torch.matmul(flattened, hash_weights)
+    hash_tensor_str = [str((hash_t[:4]+hash_t[4:8]-hash_t[8:12]).tolist()).replace(' ','') for hash_t in hash_tensor]
+    return hash_tensor, hash_tensor_str
+
+
+# Bernardo
+def make_coeff_file_path(hash_str_list, coeffs_dir, ext='.pt'):
+    for i in range(len(hash_str_list)):
+        hash_str_list[i] = os.path.join(coeffs_dir, hash_str_list[i]+ext)
+    return hash_str_list
+
+
+# Bernardo
+def exists_bfm_coeffs(coeff_paths):
+    for path in coeff_paths:
+        if not os.path.isfile(path):
+            return False
+    return True
+
+
+# Bernardo
+def save_bfm_coeffs(paths_list=[''], bfm_coeffs=torch.Tensor()):
+    os.makedirs(os.path.dirname(paths_list[0]), exist_ok=True)
+    for path, coeff in zip(paths_list, bfm_coeffs):
+        torch.save(coeff, path)
+
+
+# Bernardo
+def load_bfm_coeffs(paths_list=['']):
+    bfm_coeffs = torch.zeros((len(paths_list), 257), dtype=torch.float32, device='cuda:0')
+    for i in range(len(paths_list)):
+        bfm_coeffs[i] = torch.load(paths_list[i])
+    return bfm_coeffs
+
+
+# Bernardo
+def split_bfm_coeffs(bfm_coeffs):
+    batch_id    = bfm_coeffs[:, :80]
+    batch_exp   = bfm_coeffs[:, 80:144]
+    batch_angle = bfm_coeffs[:, 224:227]
+    batch_trans = bfm_coeffs[:, 254:]
+    return batch_id, batch_exp, batch_angle, batch_trans
+
+
+# Bernardo
+def calc_bfm_consistency_loss_precomputed_stylized_face(eps, timesteps, noisy_images, batch, pl_module,
+                                                        x0_pred, x0_pred_feature, spatial, hparams):
+    reconstruction_model = pl_module.reconstruction_model
+    # scheduler = pl_module.noise_scheduler
+    # recognition_model = pl_module.recognition_model
+
+    # x0_pred = calculate_x0_from_eps(eps, noisy_images, timesteps, scheduler)
+    id_image = batch['id_image']
+    orig = batch['orig']
+
+    id_image_hash_float, id_image_hash_str = compute_hash(id_image)
+    orig_hash_float, orig_hash_str = compute_hash(orig)
+
+    coeffs_dir = hparams.datamodule.keywords['dataset_name'] + '_BFM_COEFFS'
+    coeffs_dir_path = os.path.join(hparams.datamodule.keywords['data_dir'], coeffs_dir)
+
+    id_image_coeff_paths = make_coeff_file_path(id_image_hash_str, coeffs_dir_path)
+    orig_coeff_paths = make_coeff_file_path(orig_hash_str, coeffs_dir_path)
+
+    if exists_bfm_coeffs(id_image_coeff_paths) and exists_bfm_coeffs(orig_coeff_paths):
+        id_image_bfm_coeffs = load_bfm_coeffs(id_image_coeff_paths)
+        orig_bfm_coeffs = load_bfm_coeffs(orig_coeff_paths)
+    else:
+        # id_image_id, id_image_exp, id_image_angle, id_image_trans = reconstruction_model(id_image)
+        # orig_id,     orig_exp,     orig_angle,     orig_trans     = reconstruction_model(orig)
+        id_image_bfm_coeffs = reconstruction_model(id_image)
+        orig_bfm_coeffs = reconstruction_model(orig)
+        save_bfm_coeffs(id_image_coeff_paths, id_image_bfm_coeffs)
+        save_bfm_coeffs(orig_coeff_paths, orig_bfm_coeffs)
+
+    id_image_id, id_image_exp, id_image_angle, id_image_trans = split_bfm_coeffs(id_image_bfm_coeffs)
+    orig_id,     orig_exp,     orig_angle,     orig_trans     = split_bfm_coeffs(orig_bfm_coeffs)
+    
+    x0_pred_bfm_coeffs  = reconstruction_model(x0_pred)
+    x0_pred_id,  x0_pred_exp,  x0_pred_angle,  x0_pred_trans  = split_bfm_coeffs(x0_pred_bfm_coeffs)
+    
+    euclDist_ident_x0Pred_idImage = euclid_distance(x0_pred_id, id_image_id)
+    
+    euclDist_express_x0Pred_origImage = euclid_distance(x0_pred_exp, orig_exp)
+    euclDist_pose_x0Pred_origImage    = euclid_distance(x0_pred_angle, orig_angle)
+
+    bfm_loss = euclDist_ident_x0Pred_idImage.mean() + (euclDist_express_x0Pred_origImage.mean() + euclDist_pose_x0Pred_origImage.mean())
+    return bfm_loss
 
 
 def extract_mean_var(spatial):
