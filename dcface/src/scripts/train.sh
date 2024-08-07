@@ -1,9 +1,12 @@
+# DATALOADER_DETERMINISTIC=false   # default (using data augmentation)
+DATALOADER_DETERMINISTIC=true      # Bernardo (no data augmentation)
 
 # CUDA_VISIBLE_DEVICES=0,1 python src/train.py \
 python src/train.py \
         prefix=e:10_spatial_dim:5_bias:0.0_casia_ir50 \
         datamodule.total_gpu_batch_size=32 \
         datamodule=casia_webface \
+        datamodule.deterministic=$DATALOADER_DETERMINISTIC \
         lightning.max_epochs=10 \
         recognition=casia_ir50 \
         recognition_eval=default \

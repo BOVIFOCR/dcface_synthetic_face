@@ -37,7 +37,8 @@ class FaceDataModule(LightningDataModule):
             dataset_path = os.path.join(self.hparams.data_dir, self.hparams.dataset_name)
             encoded_rec = encoded_dataset.maybe_load_train_rec(dataset_path, self.hparams)
             self.data_train = face_dataset.make_dataset(dataset_path,
-                                                        deterministic=False,
+                                                        # deterministic=False,                     # default
+                                                        deterministic=self.hparams.deterministic,  # Bernardo (set value in 'dcface/src/scripts/train.sh')
                                                         img_size=self.hparams.img_size,
                                                         return_extra_same_label_samples=self.hparams.return_extra_same_label_samples,
                                                         subset=self.hparams.train_val_split[0],
