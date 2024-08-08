@@ -3,8 +3,8 @@
 # python src/train.py \
 
 # BATCH_GPU=2
-# BATCH_GPU=8      # duo     ( 9.6GB)
-BATCH_GPU=16       # duo     (16.0GB)
+BATCH_GPU=8      # duo     ( 9.6GB)
+# BATCH_GPU=16       # duo     (16.0GB)
 # BATCH_GPU=32     # duo     ()
 # BATCH_GPU=256    # daugman (40.0GB)
 
@@ -13,18 +13,22 @@ DATA_MODULE=casia_webface                 # original
 
 # ThreeDMM_LOSS_LAMBDA=0.001
 # ThreeDMM_LOSS_LAMBDA=0.005
-# ThreeDMM_LOSS_LAMBDA=0.05                 # same as 'identity_consistency_loss_lambda'
+# ThreeDMM_LOSS_LAMBDA=0.05               # same as 'identity_consistency_loss_lambda'
 
 # BFM_LOSS_LAMBDA=0.001
 # BFM_LOSS_LAMBDA=0.005
 BFM_LOSS_LAMBDA=0.01
-# BFM_LOSS_LAMBDA=0.05                      # same as 'identity_consistency_loss_lambda'
+# BFM_LOSS_LAMBDA=0.05                    # same as 'identity_consistency_loss_lambda'
+
+# DATALOADER_DETERMINISTIC=false          # default (using data augmentation)
+DATALOADER_DETERMINISTIC=true             # Bernardo (no data augmentation)
 
 
 python src/train_with_BFM_consistency_constraints.py \
         prefix=e:10_spatial_dim:5_bias:0.0_casia_ir50 \
         datamodule.total_gpu_batch_size=$BATCH_GPU \
         datamodule=$DATA_MODULE \
+        datamodule.deterministic=$DATALOADER_DETERMINISTIC \
         lightning.max_epochs=10 \
         recognition=casia_ir50 \
         recognition_eval=default \
