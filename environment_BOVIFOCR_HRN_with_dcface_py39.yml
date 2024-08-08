@@ -208,7 +208,6 @@ dependencies:
     - oauthlib==3.2.2
     - omegaconf==2.3.0
     - opencv-python==4.5.5.64
-    - opencv-python-headless==4.5.5.64
     - opt-einsum==3.3.0
     - packaging==23.1
     - pandas==2.0.0
