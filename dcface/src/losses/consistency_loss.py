@@ -466,8 +466,12 @@ def calc_bfm_consistency_loss_precomputed_stylized_face(eps, timesteps, noisy_im
     euclDist_express_x0Pred_origImage = euclid_distance(x0_pred_exp, orig_exp)
     euclDist_pose_x0Pred_origImage    = euclid_distance(x0_pred_angle, orig_angle)
 
-    bfm_loss = euclDist_ident_x0Pred_idImage.mean() + (euclDist_express_x0Pred_origImage.mean() + euclDist_pose_x0Pred_origImage.mean())
-    return bfm_loss
+    # bfm_loss = euclDist_ident_x0Pred_idImage.mean() + (euclDist_express_x0Pred_origImage.mean() + euclDist_pose_x0Pred_origImage.mean())
+    # return bfm_loss
+    bfm_id =      euclDist_ident_x0Pred_idImage.mean()
+    bfm_express = euclDist_express_x0Pred_origImage.mean()
+    bfm_pose =    euclDist_pose_x0Pred_origImage.mean()
+    return bfm_id, bfm_express, bfm_pose
 
 
 def extract_mean_var(spatial):

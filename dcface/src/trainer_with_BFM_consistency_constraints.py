@@ -260,12 +260,15 @@ class TrainerWithBFMConsistencyConstraints(pl.LightningModule):
                 # bfm_loss = calc_bfm_consistency_loss(eps=noise_pred, timesteps=timesteps,
                 #                                      noisy_images=noisy_images, batch=batch,
                 #                                      pl_module=self)
-                bfm_loss = calc_bfm_consistency_loss_precomputed_stylized_face(eps=noise_pred, timesteps=timesteps,
-                                                                               noisy_images=noisy_images, batch=batch, pl_module=self,
-                                                                               x0_pred=x0_pred, x0_pred_feature=x0_pred_feature, spatial=spatial,
-                                                                               hparams=self.hparams)
-                total_loss = total_loss + bfm_loss * self.hparams.losses.bfm_consistency_loss_lambda
-                loss_dict[f'{stage}/bfm_loss'] = bfm_loss
+                bfm_id_mean, bfm_express_mean, bfm_pose_mean = calc_bfm_consistency_loss_precomputed_stylized_face(eps=noise_pred, timesteps=timesteps,
+                                                                                                                   noisy_images=noisy_images, batch=batch, pl_module=self,
+                                                                                                                   x0_pred=x0_pred, x0_pred_feature=x0_pred_feature, spatial=spatial,
+                                                                                                                   hparams=self.hparams)
+                total_loss = total_loss + (self.hparams.losses.bfm_consistency_loss_lambda * (bfm_id_mean + bfm_express_mean + bfm_pose_mean))
+                loss_dict[f'{stage}/bfm_loss'] = bfm_id_mean + bfm_express_mean + bfm_pose_mean
+                loss_dict[f'{stage}/bfm_id'] = bfm_id_mean
+                loss_dict[f'{stage}/bfm_express'] = bfm_express_mean
+                loss_dict[f'{stage}/bfm_pose'] = bfm_pose_mean
 
                 if batch_idx == 0:
                     print(f'Saving batch {batch_idx} to \'{self.hparams.paths.output_dir}\'')
