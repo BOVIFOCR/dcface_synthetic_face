@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import cv2
 from pytorch_lightning.utilities.distributed import rank_zero_only
-import os, sys
+import os, sys, glob
 from typing import Any, List
 from src.general_utils.os_utils import copy_project_files
 import pytorch_lightning as pl
@@ -87,6 +87,29 @@ class TrainerWithBFMConsistencyConstraints(pl.LightningModule):
             self.model.train = partial(disabled_train, self=self.model)
             for param in self.model.parameters():
                 param.requires_grad = False
+
+        # Bernardo
+        self.bfm_coeffs_dict = None
+        self.coeffs_dir = self.hparams.datamodule.keywords['dataset_name'] + '_BFM_COEFFS'
+        self.coeffs_dir_path = os.path.join(self.hparams.datamodule.keywords['data_dir'], self.coeffs_dir)
+        if os.path.isdir(self.coeffs_dir_path):
+            print(f'Loading precomputed BFM coefficients from \'{self.coeffs_dir_path}\'')
+            self.bfm_coeffs_dict = self.load_precomputed_bfm_coefficients(self.coeffs_dir_path, '.pt')
+            # for idx_key, bfm_key in enumerate(self.bfm_coeffs_dict.keys()):
+            #     print(f'{idx_key} - {bfm_key}: {self.bfm_coeffs_dict[bfm_key]}')
+            # sys.exit(0)
+
+
+    # Bernardo
+    def load_precomputed_bfm_coefficients(self, directory, extension='.pt'):
+        paths_list = glob.glob(os.path.join(directory, f'**/*{extension}'), recursive=True)
+        bfm_coeffs_dict = {}
+        for i in range(len(paths_list)):
+            print(f'{i}/{len(paths_list)}', end='\r')
+            hash, _ = os.path.splitext(os.path.basename(paths_list[i]))
+            bfm_coeffs_dict[hash] = torch.load(paths_list[i])
+        print()
+        return bfm_coeffs_dict
 
 
     def get_parameters(self):
@@ -263,7 +286,7 @@ class TrainerWithBFMConsistencyConstraints(pl.LightningModule):
                 bfm_id_mean, bfm_express_mean, bfm_pose_mean = calc_bfm_consistency_loss_precomputed_stylized_face(eps=noise_pred, timesteps=timesteps,
                                                                                                                    noisy_images=noisy_images, batch=batch, pl_module=self,
                                                                                                                    x0_pred=x0_pred, x0_pred_feature=x0_pred_feature, spatial=spatial,
-                                                                                                                   hparams=self.hparams)
+                                                                                                                   hparams=self.hparams, bfm_coeffs_dict=self.bfm_coeffs_dict)
                 total_loss = total_loss + (self.hparams.losses.bfm_consistency_loss_lambda * (bfm_id_mean + bfm_express_mean + bfm_pose_mean))
                 loss_dict[f'{stage}/bfm_loss'] = bfm_id_mean + bfm_express_mean + bfm_pose_mean
                 loss_dict[f'{stage}/bfm_id'] = bfm_id_mean

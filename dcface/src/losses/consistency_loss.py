@@ -416,6 +416,14 @@ def load_bfm_coeffs(paths_list=['']):
 
 
 # Bernardo
+def make_batch_bfm_coeffs(bfm_coeffs_dict={}, hashes=['']):
+    bfm_coeffs_batch = torch.zeros((len(hashes), 257), dtype=torch.float32, device='cuda:0')
+    for i in range(len(hashes)):
+        bfm_coeffs_batch[i] = bfm_coeffs_dict[hashes[i]]
+    return bfm_coeffs_batch
+
+
+# Bernardo
 def split_bfm_coeffs(bfm_coeffs):
     batch_id    = bfm_coeffs[:, :80]
     batch_exp   = bfm_coeffs[:, 80:144]
@@ -426,7 +434,7 @@ def split_bfm_coeffs(bfm_coeffs):
 
 # Bernardo
 def calc_bfm_consistency_loss_precomputed_stylized_face(eps, timesteps, noisy_images, batch, pl_module,
-                                                        x0_pred, x0_pred_feature, spatial, hparams):
+                                                        x0_pred, x0_pred_feature, spatial, hparams, bfm_coeffs_dict):
     reconstruction_model = pl_module.reconstruction_model
     # scheduler = pl_module.noise_scheduler
     # recognition_model = pl_module.recognition_model
@@ -438,6 +446,7 @@ def calc_bfm_consistency_loss_precomputed_stylized_face(eps, timesteps, noisy_im
     id_image_hash_float, id_image_hash_str = compute_hash(id_image)
     orig_hash_float, orig_hash_str = compute_hash(orig)
 
+    '''
     coeffs_dir = hparams.datamodule.keywords['dataset_name'] + '_BFM_COEFFS'
     coeffs_dir_path = os.path.join(hparams.datamodule.keywords['data_dir'], coeffs_dir)
 
@@ -454,6 +463,10 @@ def calc_bfm_consistency_loss_precomputed_stylized_face(eps, timesteps, noisy_im
         orig_bfm_coeffs = reconstruction_model(orig)
         save_bfm_coeffs(id_image_coeff_paths, id_image_bfm_coeffs)
         save_bfm_coeffs(orig_coeff_paths, orig_bfm_coeffs)
+    '''
+
+    id_image_bfm_coeffs = make_batch_bfm_coeffs(bfm_coeffs_dict, id_image_hash_str)
+    orig_bfm_coeffs = make_batch_bfm_coeffs(bfm_coeffs_dict, orig_hash_str)
 
     id_image_id, id_image_exp, id_image_angle, id_image_trans = split_bfm_coeffs(id_image_bfm_coeffs)
     orig_id,     orig_exp,     orig_angle,     orig_trans     = split_bfm_coeffs(orig_bfm_coeffs)
