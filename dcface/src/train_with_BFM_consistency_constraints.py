@@ -12,8 +12,16 @@ root = pyrootutils.setup_root(
 dotenv.load_dotenv(dotenv_path=root.parent.parent / '.env', override=True)
 # dotenv.load_dotenv(dotenv_path=root.parent.parent / '.env_with_3DMM_consistency_constraints', override=True)
 
-os.environ["DATA_ROOT"] = os.path.join(root, 'data')                                         # original
-# os.environ["DATA_ROOT"] = '/datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace'   # Bernardo
+# PATH TO FOLDER 'faces_webface_112x112' CONTAINING FILES 'train.idx', 'train.rec', and 'train.lst'
+# os.environ["DATA_ROOT"] = os.path.join(root, 'data')                                         # original
+if os.uname().nodename == 'duo':                                                               # Bernardo
+    os.environ["DATA_ROOT"] = os.path.join(root, 'data')
+elif os.uname().nodename == 'diolkos':                                                         # Bernardo
+    os.environ["DATA_ROOT"] = os.path.join(root, 'data')
+elif os.uname().nodename == 'daugman':                                                         # Bernardo
+    os.environ["DATA_ROOT"] = '/groups/bjgbiesseck/datasets/face_recognition/1_CASIA-WebFace'
+elif os.uname().nodename == 'peixoto':                                                         # Bernardo
+    os.environ["DATA_ROOT"] = os.path.join(root, 'data')
 
 os.environ["HYDRA_FULL_ERROR"] = '1'
 
