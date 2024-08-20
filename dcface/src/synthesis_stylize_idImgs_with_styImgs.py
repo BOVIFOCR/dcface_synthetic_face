@@ -1,3 +1,6 @@
+# duo
+# export CUDA_VISIBLE_DEVICES=0; python synthesis_stylize_idImgs_with_styImgs.py --ckpt_path /home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/experiments_WITH_BFM_CONSISTENCY_CONSTRAINTS/dcface/datamodule=DETERMINISTIC_e:10_spatial_dim:5_bias:0.0_casia_ir50_08-09_0_λBFM=0.01/checkpoints/epoch_008.ckpt --id_images_root /datasets2/bjgbiesseck/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids/dcface_original_10000_synthetic_ids --style_images_root /datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112 --num_image_per_subject 50 --num_subject 10000 --batch_size 32 --style_sampling_method random --save_root /datasets2/bjgbiesseck/face_recognition/dcface/generated_images
+
 import pandas as pd
 import pyrootutils
 import dotenv
@@ -155,9 +158,16 @@ def main():
         id_name = os.path.basename(args.id_images_root).split('.')[0]
         style_dir_name = os.path.basename(args.style_images_root)
         args.save_root = os.path.join(root, 'generated_images', runname_name, f'id:{id_name}/sty:{args.style_sampling_method}_{style_dir_name}')
-        os.makedirs(args.save_root, exist_ok=True)
+        # os.makedirs(args.save_root, exist_ok=True)
+    else:
+        runname_name = os.path.basename(args.ckpt_path).split('.')[0]
+        id_name = os.path.basename(args.id_images_root).split('.')[0]
+        style_dir_name = os.path.basename(args.style_images_root)
+        args.save_root = os.path.join(args.save_root, runname_name, f'id:{id_name}/sty:{args.style_sampling_method}_{style_dir_name}')
+    print(f'\nMaking dir: \'{args.save_root}\'')
+    os.makedirs(args.save_root, exist_ok=True)
 
-    print('saving at {}'.format(args.save_root))
+    print('\nsaving at {}'.format(args.save_root))
     if args.use_writer:
         if args.num_partition > 1:
             args.save_root = os.path.join(args.save_root, f"record_{args.partition_idx}-{args.num_partition}")
