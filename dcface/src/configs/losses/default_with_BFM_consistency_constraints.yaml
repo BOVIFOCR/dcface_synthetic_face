@@ -9,7 +9,10 @@ identity_consistency_loss_time_cut: 0.0
 identity_consistency_loss_weight_start_bias: 0.0
 
 # threeDMM_consistency_loss_lambda: 0.0    # Bernardo
-bfm_consistency_loss_lambda: 0.0           # Bernardo
+# bfm_consistency_loss_lambda: 0.0         # Bernardo
+bfm_consistency_id_lambda: 0.0             # Bernardo
+bfm_consistency_exp_lambda: 0.0            # Bernardo
+bfm_consistency_pose_lambda: 0.0           # Bernardo
 
 latent_mixup_loss_lambda: 0.0
 latent_mixup_loss_name: v1
