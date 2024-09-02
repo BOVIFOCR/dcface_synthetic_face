@@ -30,17 +30,23 @@ BFM_ID_LAMBDA=0.0
 # BFM_ID_LAMBDA=0.05
 
 # BFM_EXP_LAMBDA=0.0
-# BFM_EXP_LAMBDA=0.01
-BFM_EXP_LAMBDA=0.05
+BFM_EXP_LAMBDA=0.01
+# BFM_EXP_LAMBDA=0.05
 
 # BFM_POSE_LAMBDA=0.0
-# BFM_POSE_LAMBDA=0.01
-BFM_POSE_LAMBDA=0.05
+BFM_POSE_LAMBDA=0.01
+# BFM_POSE_LAMBDA=0.05
 
 
 
 # DATALOADER_DETERMINISTIC=false          # default (using data augmentation)
 DATALOADER_DETERMINISTIC=true             # Bernardo (no data augmentation)
+
+
+
+# CKPT_PATH=null                          # default
+CKPT_PATH='experiments_WITH_BFM_CONSISTENCY_CONSTRAINTS/dcface/e:10_spatial_dim:5_bias:0.0_casia_ir50_08-29_0/checkpoints/last.ckpt'  # (BATCH_GPU=16, BFM_ID_LAMBDA=0.0, BFM_EXP_LAMBDA=0.01, BFM_POSE_LAMBDA=0.01, DATALOADER_DETERMINISTIC=true)
+
 
 
 python src/train_with_BFM_consistency_constraints.py \
@@ -78,4 +84,5 @@ python src/train_with_BFM_consistency_constraints.py \
         datamodule.trim_outlier=true \
         model.unet_config.freeze_unet=false \
         callbacks.model_checkpoint.save_top_k=1 \
-        external_mapping.spatial_dim=5
+        external_mapping.spatial_dim=5 \
+        ckpt_path=$CKPT_PATH
