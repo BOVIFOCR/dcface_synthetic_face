@@ -3,8 +3,8 @@
 # python src/train.py \
 
 # BATCH_GPU=2
-# BATCH_GPU=8      # duo     ( 9.6GB)
-BATCH_GPU=16       # duo     (16.0GB)
+BATCH_GPU=8        # duo     ( 9.6GB)
+# BATCH_GPU=16     # duo     (16.0GB)
 # BATCH_GPU=32     # duo     ()
 # BATCH_GPU=256    # daugman (40.0GB)
 
@@ -25,8 +25,8 @@ DATA_MODULE=casia_webface                          # original (whole dataset, 10
 
 
 
-BFM_ID_LAMBDA=0.0
-# BFM_ID_LAMBDA=0.01
+# BFM_ID_LAMBDA=0.0
+BFM_ID_LAMBDA=0.01
 # BFM_ID_LAMBDA=0.05
 
 # BFM_EXP_LAMBDA=0.0
@@ -44,8 +44,8 @@ DATALOADER_DETERMINISTIC=true             # Bernardo (no data augmentation)
 
 
 
-# CKPT_PATH=null                          # default
-CKPT_PATH='experiments_WITH_BFM_CONSISTENCY_CONSTRAINTS/dcface/e:10_spatial_dim:5_bias:0.0_casia_ir50_08-29_0/checkpoints/last.ckpt'  # (BATCH_GPU=16, BFM_ID_LAMBDA=0.0, BFM_EXP_LAMBDA=0.01, BFM_POSE_LAMBDA=0.01, DATALOADER_DETERMINISTIC=true)
+CKPT_PATH=null                          # default
+# CKPT_PATH='experiments_WITH_BFM_CONSISTENCY_CONSTRAINTS/dcface/e:10_spatial_dim:5_bias:0.0_casia_ir50_08-29_0/checkpoints/last.ckpt'  # (BATCH_GPU=16, BFM_ID_LAMBDA=0.0, BFM_EXP_LAMBDA=0.01, BFM_POSE_LAMBDA=0.01, DATALOADER_DETERMINISTIC=true)
 
 
 

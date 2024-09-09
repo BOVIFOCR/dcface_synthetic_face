@@ -335,6 +335,11 @@ class BFM_ReconstructionModel(nn.Module):
         # self.head = head
         # self.center = center
 
+        from util.load_mats import LoadBFM09, LoadExpBasis
+        self.model_bfm_exp = LoadBFM09(bfm_folder=os.path.dirname(self.reconstruction_config.bfm_basis),
+                                       exp_folder=os.path.dirname(self.reconstruction_config.exp_basis),
+                                       device='cuda:0')
+
     def get_arcface_embedding(self, x):
         embedd = F.normalize(self.backbone.arcface(x))
         return embedd
@@ -368,6 +373,15 @@ class BFM_ReconstructionModel(nn.Module):
     def resize_batch(self, batch_img):
         resized_batch_img = torch.stack([self.resizer(image) for image in batch_img])
         return resized_batch_img
+
+    def rescale_bfm_coeffs(self, coeffs):
+        # bfm_coeffs_split['id']  *= np.squeeze(model_bfm_exp['idEV'])
+        # bfm_coeffs_split['exp'] *= np.squeeze(model_bfm_exp['exEV'])
+        # bfm_coeffs_split['tex'] *= np.squeeze(model_bfm_exp['texEV'])
+        coeffs[:, :80]     *= torch.squeeze(self.model_bfm_exp['idEV'])    # face identity    (80)
+        coeffs[:, 80:144]  *= torch.squeeze(self.model_bfm_exp['exEV'])    # face expression  (64)
+        coeffs[:, 144:224] *= torch.squeeze(self.model_bfm_exp['texEV'])   # texture          (80)
+        return coeffs
 
     def forward(self, batch_img):
         # batch

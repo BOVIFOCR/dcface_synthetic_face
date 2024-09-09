@@ -166,6 +166,8 @@ dcface/batch_samples
 dcface/src/MICA/models/models_weights/arcface-torch
 dcface/src/MICA/data
 
+dcface/src/HRN/assets/BaselFaceModel/
+
 # Bernardo
 *.mat
 *.npy

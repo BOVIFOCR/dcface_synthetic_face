@@ -17,7 +17,7 @@ dotenv.load_dotenv(dotenv_path=root.parent.parent / '.env', override=True)
 if os.uname().nodename == 'duo':                                                               # Bernardo
     os.environ["DATA_ROOT"] = os.path.join(root, 'data')
 elif os.uname().nodename == 'diolkos':                                                         # Bernardo
-    os.environ["DATA_ROOT"] = os.path.join(root, 'data')
+    os.environ["DATA_ROOT"] = '/nobackup/unico/datasets/face_recognition/1_CASIA-WebFace'
 elif os.uname().nodename == 'daugman':                                                         # Bernardo
     os.environ["DATA_ROOT"] = '/groups/bjgbiesseck/datasets/face_recognition/1_CASIA-WebFace'
 elif os.uname().nodename == 'peixoto':                                                         # Bernardo

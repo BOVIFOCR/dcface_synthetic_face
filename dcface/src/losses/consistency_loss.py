@@ -3,6 +3,7 @@ import numpy as np
 
 from src.general_utils.img_utils import temp_plot, prepare_text_img
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 def calculate_x0_from_eps(eps, noisy_images, timesteps, scheduler, clip=True):
@@ -322,6 +323,15 @@ def euclid_distance(batch1, batch2):
 
 
 # Bernardo
+def cosine_simil(batch1, batch2):
+    assert batch1.shape == batch2.shape
+    batch1 = F.normalize(batch1, p=2, dim=1)
+    batch2 = F.normalize(batch2, p=2, dim=1)
+    cosine_sim = torch.sum(batch1 * batch2, dim=1)
+    return cosine_sim
+
+
+# Bernardo
 def calc_3dmm_consistency_loss(eps, timesteps, noisy_images, batch, pl_module, ):
     reconstruction_model = pl_module.reconstruction_model
     scheduler = pl_module.noise_scheduler
@@ -443,48 +453,37 @@ def calc_bfm_consistency_loss_precomputed_stylized_face(eps, timesteps, noisy_im
     id_image = batch['id_image']
     orig = batch['orig']
 
-    id_image_hash_float, id_image_hash_str = compute_hash(id_image)
-    orig_hash_float, orig_hash_str = compute_hash(orig)
+    if not bfm_coeffs_dict is None:
+        id_image_hash_float, id_image_hash_str = compute_hash(id_image)
+        orig_hash_float, orig_hash_str = compute_hash(orig)
 
-    '''
-    coeffs_dir = hparams.datamodule.keywords['dataset_name'] + '_BFM_COEFFS'
-    coeffs_dir_path = os.path.join(hparams.datamodule.keywords['data_dir'], coeffs_dir)
-
-    id_image_coeff_paths = make_coeff_file_path(id_image_hash_str, coeffs_dir_path)
-    orig_coeff_paths = make_coeff_file_path(orig_hash_str, coeffs_dir_path)
-
-    if exists_bfm_coeffs(id_image_coeff_paths) and exists_bfm_coeffs(orig_coeff_paths):
-        id_image_bfm_coeffs = load_bfm_coeffs(id_image_coeff_paths)
-        orig_bfm_coeffs = load_bfm_coeffs(orig_coeff_paths)
+        id_image_bfm_coeffs = make_batch_bfm_coeffs(bfm_coeffs_dict, id_image_hash_str)
+        orig_bfm_coeffs = make_batch_bfm_coeffs(bfm_coeffs_dict, orig_hash_str)
     else:
-        # id_image_id, id_image_exp, id_image_angle, id_image_trans = reconstruction_model(id_image)
-        # orig_id,     orig_exp,     orig_angle,     orig_trans     = reconstruction_model(orig)
         id_image_bfm_coeffs = reconstruction_model(id_image)
         orig_bfm_coeffs = reconstruction_model(orig)
-        save_bfm_coeffs(id_image_coeff_paths, id_image_bfm_coeffs)
-        save_bfm_coeffs(orig_coeff_paths, orig_bfm_coeffs)
-    '''
+    x0_pred_bfm_coeffs = reconstruction_model(x0_pred)
 
-    id_image_bfm_coeffs = make_batch_bfm_coeffs(bfm_coeffs_dict, id_image_hash_str)
-    orig_bfm_coeffs = make_batch_bfm_coeffs(bfm_coeffs_dict, orig_hash_str)
+    id_image_bfm_coeffs = reconstruction_model.rescale_bfm_coeffs(id_image_bfm_coeffs)
+    orig_bfm_coeffs = reconstruction_model.rescale_bfm_coeffs(orig_bfm_coeffs)
+    x0_pred_bfm_coeffs = reconstruction_model.rescale_bfm_coeffs(x0_pred_bfm_coeffs)
 
     id_image_id, id_image_exp, id_image_angle, id_image_trans = split_bfm_coeffs(id_image_bfm_coeffs)
     orig_id,     orig_exp,     orig_angle,     orig_trans     = split_bfm_coeffs(orig_bfm_coeffs)
-    
-    x0_pred_bfm_coeffs  = reconstruction_model(x0_pred)
     x0_pred_id,  x0_pred_exp,  x0_pred_angle,  x0_pred_trans  = split_bfm_coeffs(x0_pred_bfm_coeffs)
     
-    euclDist_ident_x0Pred_idImage = euclid_distance(x0_pred_id, id_image_id)
-    
-    euclDist_express_x0Pred_origImage = euclid_distance(x0_pred_exp, orig_exp)
-    euclDist_pose_x0Pred_origImage    = euclid_distance(x0_pred_angle, orig_angle)
+    # euclDist_ident_x0Pred_idImage     = euclid_distance(x0_pred_id, id_image_id)
+    # euclDist_express_x0Pred_origImage = euclid_distance(x0_pred_exp, orig_exp)
+    # euclDist_pose_x0Pred_origImage    = euclid_distance(x0_pred_angle, orig_angle)
 
-    # bfm_loss = euclDist_ident_x0Pred_idImage.mean() + (euclDist_express_x0Pred_origImage.mean() + euclDist_pose_x0Pred_origImage.mean())
-    # return bfm_loss
-    bfm_id =      euclDist_ident_x0Pred_idImage.mean()
-    bfm_express = euclDist_express_x0Pred_origImage.mean()
-    bfm_pose =    euclDist_pose_x0Pred_origImage.mean()
-    return bfm_id, bfm_express, bfm_pose
+    cosSim_ident_x0Pred_idImage     = cosine_simil(x0_pred_id, id_image_id)
+    cosSim_express_x0Pred_origImage = cosine_simil(x0_pred_exp, orig_exp)
+    cosSim_pose_x0Pred_origImage    = cosine_simil(x0_pred_angle, orig_angle)
+
+    bfm_id_loss      = (1.0 - cosSim_ident_x0Pred_idImage).mean()
+    bfm_express_loss = (1.0 - cosSim_express_x0Pred_origImage).mean()
+    bfm_pose_loss    = (1.0 - cosSim_pose_x0Pred_origImage).mean()
+    return bfm_id_loss, bfm_express_loss, bfm_pose_loss
 
 
 def extract_mean_var(spatial):

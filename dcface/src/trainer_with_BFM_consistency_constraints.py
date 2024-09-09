@@ -284,22 +284,22 @@ class TrainerWithBFMConsistencyConstraints(pl.LightningModule):
                 # bfm_loss = calc_bfm_consistency_loss(eps=noise_pred, timesteps=timesteps,
                 #                                      noisy_images=noisy_images, batch=batch,
                 #                                      pl_module=self)
-                bfm_id_mean, bfm_express_mean, bfm_pose_mean = calc_bfm_consistency_loss_precomputed_stylized_face(eps=noise_pred, timesteps=timesteps,
+                bfm_id_mean_loss, bfm_express_mean_loss, bfm_pose_mean_loss = calc_bfm_consistency_loss_precomputed_stylized_face(eps=noise_pred, timesteps=timesteps,
                                                                                                                    noisy_images=noisy_images, batch=batch, pl_module=self,
                                                                                                                    x0_pred=x0_pred, x0_pred_feature=x0_pred_feature, spatial=spatial,
                                                                                                                    hparams=self.hparams, bfm_coeffs_dict=self.bfm_coeffs_dict)
 
-                # total_loss = total_loss + (self.hparams.losses.bfm_consistency_loss_lambda * (bfm_id_mean + bfm_express_mean + bfm_pose_mean))
-                total_loss = total_loss + (self.hparams.losses.bfm_consistency_id_lambda   * bfm_id_mean) \
-                                        + (self.hparams.losses.bfm_consistency_exp_lambda  * bfm_express_mean) \
-                                        + (self.hparams.losses.bfm_consistency_pose_lambda * bfm_pose_mean)
+                # total_loss = total_loss + (self.hparams.losses.bfm_consistency_loss_lambda * (bfm_id_mean_loss + bfm_express_mean_loss + bfm_pose_mean_loss))
+                total_loss = total_loss + (self.hparams.losses.bfm_consistency_id_lambda   * bfm_id_mean_loss) \
+                                        + (self.hparams.losses.bfm_consistency_exp_lambda  * bfm_express_mean_loss) \
+                                        + (self.hparams.losses.bfm_consistency_pose_lambda * bfm_pose_mean_loss)
 
-                loss_dict[f'{stage}/bfm_id'] = bfm_id_mean
-                loss_dict[f'{stage}/bfm_express'] = bfm_express_mean
-                loss_dict[f'{stage}/bfm_pose'] = bfm_pose_mean
-                loss_dict[f'{stage}/bfm_loss'] = (bfm_id_mean if self.hparams.losses.bfm_consistency_id_lambda > 0 else 0) \
-                                               + (bfm_express_mean if self.hparams.losses.bfm_consistency_exp_lambda > 0 else 0) \
-                                               + (bfm_pose_mean if self.hparams.losses.bfm_consistency_pose_lambda > 0 else 0)
+                loss_dict[f'{stage}/bfm_id'] = bfm_id_mean_loss
+                loss_dict[f'{stage}/bfm_express'] = bfm_express_mean_loss
+                loss_dict[f'{stage}/bfm_pose'] = bfm_pose_mean_loss
+                loss_dict[f'{stage}/bfm_loss'] = (bfm_id_mean_loss if self.hparams.losses.bfm_consistency_id_lambda > 0 else 0) \
+                                               + (bfm_express_mean_loss if self.hparams.losses.bfm_consistency_exp_lambda > 0 else 0) \
+                                               + (bfm_pose_mean_loss if self.hparams.losses.bfm_consistency_pose_lambda > 0 else 0)
 
                 if batch_idx == 0:
                     print(f'Saving batch {batch_idx} to \'{self.hparams.paths.output_dir}\'')
