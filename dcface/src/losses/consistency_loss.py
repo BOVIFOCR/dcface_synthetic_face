@@ -437,7 +437,10 @@ def load_bfm_coeffs(paths_list=['']):
 def make_batch_bfm_coeffs(bfm_coeffs_dict={}, hashes=['']):
     bfm_coeffs_batch = torch.zeros((len(hashes), 257), dtype=torch.float32, device='cuda:0')
     for i in range(len(hashes)):
-        bfm_coeffs_batch[i] = bfm_coeffs_dict[hashes[i]]
+        try:
+            bfm_coeffs_batch[i] = bfm_coeffs_dict[hashes[i]]
+        except KeyError:
+            return None
     return bfm_coeffs_batch
 
 
@@ -451,8 +454,15 @@ def split_bfm_coeffs(bfm_coeffs):
 
 
 # Bernardo
+def add_coeffs_to_dict(coeffs_dict, coeffs_hashes, coeffs):
+    for idx_hash, coeff_hash in enumerate(coeffs_hashes):
+        coeffs_dict[hash_str] = coeffs[idx_hash]
+
+
+# Bernardo
 def calc_bfm_consistency_loss_precomputed_stylized_face(eps, timesteps, noisy_images, batch, pl_module,
-                                                        x0_pred, x0_pred_feature, spatial, hparams, bfm_coeffs_dict):
+                                                        x0_pred, x0_pred_feature, spatial, hparams, bfm_coeffs_dict,
+                                                        bfm_coeffs_dir_path):
     reconstruction_model = pl_module.reconstruction_model
     # scheduler = pl_module.noise_scheduler
     # recognition_model = pl_module.recognition_model
@@ -467,9 +477,21 @@ def calc_bfm_consistency_loss_precomputed_stylized_face(eps, timesteps, noisy_im
 
         id_image_bfm_coeffs = make_batch_bfm_coeffs(bfm_coeffs_dict, id_image_hash_str)
         orig_bfm_coeffs = make_batch_bfm_coeffs(bfm_coeffs_dict, orig_hash_str)
+
+        if id_image_bfm_coeffs is None:
+            id_image_bfm_coeffs = reconstruction_model(id_image)
+            id_image_paths_list = make_coeff_file_path(id_image_hash_str, bfm_coeffs_dir_path)
+            save_bfm_coeffs(id_image_paths_list, id_image_bfm_coeffs)
+            add_coeffs_to_dict(bfm_coeffs_dict, id_image_hash_str, id_image_bfm_coeffs)
+        if orig_bfm_coeffs is None:
+            orig_bfm_coeffs = reconstruction_model(orig)
+            orig_paths_list = make_coeff_file_path(orig_hash_str, bfm_coeffs_dir_path)
+            save_bfm_coeffs(orig_paths_list, orig_bfm_coeffs)
+            add_coeffs_to_dict(bfm_coeffs_dict, orig_hash_str, orig_bfm_coeffs)
     else:
         id_image_bfm_coeffs = reconstruction_model(id_image)
         orig_bfm_coeffs = reconstruction_model(orig)
+    
     x0_pred_bfm_coeffs = reconstruction_model(x0_pred)
 
     id_image_bfm_coeffs = reconstruction_model.rescale_bfm_coeffs(id_image_bfm_coeffs)

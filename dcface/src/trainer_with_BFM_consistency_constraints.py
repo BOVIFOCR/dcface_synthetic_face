@@ -287,7 +287,8 @@ class TrainerWithBFMConsistencyConstraints(pl.LightningModule):
                 bfm_id_mean_loss, bfm_express_mean_loss, bfm_pose_mean_loss = calc_bfm_consistency_loss_precomputed_stylized_face(eps=noise_pred, timesteps=timesteps,
                                                                                                                    noisy_images=noisy_images, batch=batch, pl_module=self,
                                                                                                                    x0_pred=x0_pred, x0_pred_feature=x0_pred_feature, spatial=spatial,
-                                                                                                                   hparams=self.hparams, bfm_coeffs_dict=self.bfm_coeffs_dict)
+                                                                                                                   hparams=self.hparams, bfm_coeffs_dict=self.bfm_coeffs_dict,
+                                                                                                                   bfm_coeffs_dir_path=self.coeffs_dir_path)
 
                 # total_loss = total_loss + (self.hparams.losses.bfm_consistency_loss_lambda * (bfm_id_mean_loss + bfm_express_mean_loss + bfm_pose_mean_loss))
                 total_loss = total_loss + (self.hparams.losses.bfm_consistency_id_lambda   * bfm_id_mean_loss) \
