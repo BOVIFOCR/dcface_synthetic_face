@@ -456,7 +456,7 @@ def split_bfm_coeffs(bfm_coeffs):
 # Bernardo
 def add_coeffs_to_dict(coeffs_dict, coeffs_hashes, coeffs):
     for idx_hash, coeff_hash in enumerate(coeffs_hashes):
-        coeffs_dict[hash_str] = coeffs[idx_hash]
+        coeffs_dict[coeff_hash] = coeffs[idx_hash]
 
 
 # Bernardo
