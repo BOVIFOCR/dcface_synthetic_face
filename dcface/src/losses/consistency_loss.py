@@ -385,7 +385,8 @@ def calc_bfm_consistency_loss(eps, timesteps, noisy_images, batch, pl_module):
 # Bernardo
 hash_size=32
 hash_weights = None
-hash_file_path = 'src/HRN/assets/hash_weights_randn_size=32.pt'
+# hash_file_path = 'src/HRN/assets/hash_weights_randn_size=32.pt'
+hash_file_path = os.path.join(os.path.dirname(__file__), '../HRN/assets/hash_weights_randn_size=32.pt')
 if not os.path.isfile(hash_file_path):
     hash_weights = torch.randn((3*112*112, hash_size), dtype=torch.float32, device='cuda')
     print(f'Saving hash_weights: {hash_file_path}')
