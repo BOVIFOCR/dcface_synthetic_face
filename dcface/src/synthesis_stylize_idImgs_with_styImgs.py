@@ -2,6 +2,10 @@
 # cd ~/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/src
 # export CUDA_VISIBLE_DEVICES=0; python synthesis_stylize_idImgs_with_styImgs.py --ckpt_path /home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/experiments_WITH_BFM_CONSISTENCY_CONSTRAINTS/dcface/e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1/checkpoints/epoch_006.ckpt --id_images_root /datasets2/bjgbiesseck/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_synthetic_ids/dcface_original_10000_synthetic_ids --style_images_root /datasets2/1st_frcsyn_wacv2024/datasets/real/1_CASIA-WebFace/imgs_crops_112x112 --num_image_per_subject 50 --num_subject 10000 --batch_size 32 --style_sampling_method random --save_root /datasets2/bjgbiesseck/face_recognition/dcface/generated_images
 
+# daugman
+# cd ~/GitHub/BOVIFOCR_dcface_synthetic_face/dcface/src
+# export CUDA_VISIBLE_DEVICES=0; python synthesis_stylize_idImgs_with_styImgs.py --ckpt_path /home/bjgbiesseck/GitHub/BOVIFOCR_dcface_synthetic_face/experiments_WITH_BFM_CONSISTENCY_CONSTRAINTS/dcface/e:10_spatial_dim:5_bias:0.0_casia_ir50_09-10_1/checkpoints/epoch_008.ckpt --id_images_root /groups/bjgbiesseck/datasets/face_recognition/synthetic/dcface_with_pretrained_models/dcface_original_10000_synthetic_ids --style_images_root /groups/bjgbiesseck/datasets/face_recognition/1_CASIA-WebFace/imgs_crops_112x112 --num_image_per_subject 50 --num_subject 10000 --batch_size 32 --style_sampling_method random --save_root /groups/bjgbiesseck/datasets/face_recognition/dcface/generated_images
+
 import pandas as pd
 import pyrootutils
 import dotenv
