@@ -32,7 +32,8 @@ class ListDatasetWithIndex(Dataset):
             img = img[:, :, ::-1]
         img = Image.fromarray(img)
         img = self.transform(img)
-        return img, idx
+        # return img, idx                    # original
+        return img, idx, self.img_list[idx]  # Bernardo
 
 
 class StyleIdDataset(Dataset):
@@ -57,6 +58,7 @@ class StyleIdDataset(Dataset):
     def __len__(self):
         return len(self.labels_splits)
 
+    '''
     def __getitem__(self, idx):
         labels = self.labels_splits[idx]
         names = self.names_splits[idx]
@@ -77,6 +79,35 @@ class StyleIdDataset(Dataset):
         # style_images = torch.stack([self.style_dataset[idx.item()]['image'] for idx in style_indexes])
 
         return id_images, style_images, labels, names
+    '''
+
+    def __getitem__(self, idx):
+        labels = self.labels_splits[idx]
+        names = self.names_splits[idx]
+
+        id_indexes = self.id_index_splits[idx]
+        # id_images = torch.stack([self.id_dataset[idx.item()][0] for idx in id_indexes])   # original
+        id_images_list = [self.id_dataset[idx.item()] for idx in id_indexes]                # Bernardo
+        id_images = torch.stack([id_image[0] for id_image in id_images_list])               # Bernardo
+        id_images_paths = [id_image[2] for id_image in id_images_list]                      # Bernardo
+
+        style_indexes = self.style_index_splits[idx]
+        style_images = []
+        style_images_paths = []
+        for idx in style_indexes:
+            batch = self.style_dataset[idx.item()]
+            if isinstance(batch, dict):
+                img = batch['image']
+            else:
+                img = batch[0]
+                img_path = batch[2]              # Bernardo
+            style_images.append(img)
+            style_images_paths.append(img_path)  # Bernardo
+        style_images = torch.stack(style_images)
+        # style_images = torch.stack([self.style_dataset[idx.item()]['image'] for idx in style_indexes])
+
+        # return id_images, style_images, labels, names                                      # original
+        return id_images, style_images, labels, names, id_images_paths, style_images_paths   # Bernardo
 
 
 def batched_label_name_list(batch_size, num_subject, num_image_per_subject, num_partition, partition_idx):
@@ -196,17 +227,20 @@ def dataset_generate(pl_module, style_dataset, id_dataset, num_image_per_subject
 
     for batch in tqdm(datagen_dataloader, total=len(datagen_dataloader), desc='Generating Dataset: '):
         start_time = time.time()
-        id_images, style_images, labels, names = batch
+        # id_images, style_images, labels, names = batch                                      # original
+        id_images, style_images, labels, names, id_images_paths, style_images_paths = batch   # Bernardo
 
         # Bernardo
         if torch.any(labels >= start_label):
 
-            plotting_images = sample_batch(id_images, style_images, pl_module, seed=labels[0].item())
+            # plotting_images = sample_batch(id_images, style_images, pl_module, seed=labels[0].item())
+            plotting_images, plotting_id_images, plotting_style_images = sample_batch_return_stylized_id_sty(id_images, style_images, pl_module, seed=labels[0].item())
 
             end_time = time.time()
             total_elapsed_time = end_time - start_time
             print('    Total time: %.2fs    Time per sample: %.2fs' % (total_elapsed_time, total_elapsed_time/len(batch)))
 
+            '''
             for image, label, name in zip(plotting_images, labels, names):
                 save_name = f"{label.item()}/{name.item()}.jpg"
                 if writer is not None:
@@ -218,6 +252,33 @@ def dataset_generate(pl_module, style_dataset, id_dataset, num_image_per_subject
                     os.makedirs(os.path.dirname(save_path), exist_ok=True)
                     cv2.imwrite(save_path, image)
             print('----------')
+            '''
+
+            for image, id_image, style_image, label, name, id_image_path, style_image_path in zip(plotting_images, plotting_id_images, plotting_style_images, labels, names, id_images_paths, style_images_paths):
+                save_name = f"{label.item()}/{name.item()}.jpg"
+                if writer is not None:
+                    writer.write(image, save_name)
+                    writer.mark_done('image', save_name)
+                else:
+                    print('    id_image_path:', id_image_path)
+                    print('    style_image_path:', style_image_path)
+                    
+                    save_path = os.path.join(save_root, save_name)
+                    print('    Saving output image:', save_path)
+                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                    cv2.imwrite(save_path, image)
+                    
+                    if name == 0:
+                        id_image_path = os.path.join(save_root, save_name.replace('.jpg', '_id_image.jpg'))
+                        print('    id_image_path:', id_image_path)
+                        cv2.imwrite(id_image_path, id_image)
+
+                    style_image_path = os.path.join(save_root, save_name.replace('.jpg', '_style_image.jpg'))
+                    print('    style_image_path:', style_image_path)
+                    cv2.imwrite(style_image_path, style_image)
+
+                    print('    ---')
+            print('---------------------')
 
 
 
@@ -315,5 +376,29 @@ def sample_batch(id_images, style_images, pl_module, seed=None):
     # select which time to plot
     plotting_images = pred_images * 255
     return plotting_images[:, :, :, ::-1]
+
+
+# Bernardo
+def sample_batch_return_stylized_id_sty(id_images, style_images, pl_module, seed=None):
+
+    batch = {'image': style_images,
+             'class_label': torch.arange(len(style_images)),  # dummy
+             'index': torch.arange(len(style_images)),  # dummy
+             'orig': style_images,
+             'id_image': id_images}
+
+    if seed is not None:
+        generator = torch.manual_seed(seed)
+    else:
+        generator = None
+    pred_images = render_condition(batch, pl_module, sampler='ddim', between_zero_and_one=True,
+                                   show_progress=False, generator=generator, mixing_batch=None,
+                                   return_x0_intermediates=False)
+
+    # select which time to plot
+    plotting_images = pred_images * 255
+    plotting_id_images = (((id_images.permute(0, 2, 3, 1)+1)/2) * 255).numpy()
+    plotting_style_images = (((style_images.permute(0, 2, 3, 1)+1)/2) * 255).numpy()
+    return plotting_images[:, :, :, ::-1], plotting_id_images[:, :, :, ::-1], plotting_style_images[:, :, :, ::-1]
 
 
